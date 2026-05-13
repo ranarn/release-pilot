@@ -4,7 +4,7 @@
  * Follows the Conventional Commits specification and common extensions.
  */
 
-import type { BumpType, ConventionalCommit, ReleaseRule } from './types.js';
+import type { BumpType, ConventionalCommit, ReleaseRule } from './types.js'
 
 /** Default release rules following conventional commit best practices. */
 export const DEFAULT_RULES: ReleaseRule[] = [
@@ -19,7 +19,7 @@ export const DEFAULT_RULES: ReleaseRule[] = [
   { type: 'build', bump: 'none', section: '📦 Build' },
   { type: 'ci', bump: 'none', section: '🔧 CI/CD' },
   { type: 'chore', bump: 'none', section: '🧹 Chores' },
-];
+]
 
 /**
  * Parse custom release rules from the action input string.
@@ -28,52 +28,48 @@ export const DEFAULT_RULES: ReleaseRule[] = [
  * Example: "hotfix:patch:Bug Fixes,improvement:minor:Improvements"
  */
 export function parseCustomRules(input: string): ReleaseRule[] {
-  if (!input.trim()) return [];
+  if (!input.trim()) return []
 
   return input
     .split(',')
-    .map((rule) => rule.trim())
+    .map(rule => rule.trim())
     .filter(Boolean)
-    .map((rule) => {
-      const [type, bump, section] = rule.split(':');
+    .map(rule => {
+      const [type, bump, section] = rule.split(':')
       if (!type || !bump) {
-        throw new Error(
-          `Invalid custom rule "${rule}". Expected format: "type:bump[:section]"`,
-        );
+        throw new Error(`Invalid custom rule "${rule}". Expected format: "type:bump[:section]"`)
       }
 
-      const validBumps: BumpType[] = ['major', 'minor', 'patch', 'none'];
+      const validBumps: BumpType[] = ['major', 'minor', 'patch', 'none']
       if (!validBumps.includes(bump as BumpType)) {
-        throw new Error(
-          `Invalid bump type "${bump}" in rule "${rule}". Must be one of: ${validBumps.join(', ')}`,
-        );
+        throw new Error(`Invalid bump type "${bump}" in rule "${rule}". Must be one of: ${validBumps.join(', ')}`)
       }
 
       return {
         type: type.toLowerCase(),
         bump: bump as BumpType,
         section: section || type.charAt(0).toUpperCase() + type.slice(1),
-      };
-    });
+      }
+    })
 }
 
 /**
  * Merge custom rules with defaults. Custom rules override defaults for the same type.
  */
 export function mergeRules(customRules: ReleaseRule[]): ReleaseRule[] {
-  const ruleMap = new Map<string, ReleaseRule>();
+  const ruleMap = new Map<string, ReleaseRule>()
 
   // Add defaults first
   for (const rule of DEFAULT_RULES) {
-    ruleMap.set(rule.type, rule);
+    ruleMap.set(rule.type, rule)
   }
 
   // Override with custom rules
   for (const rule of customRules) {
-    ruleMap.set(rule.type, rule);
+    ruleMap.set(rule.type, rule)
   }
 
-  return Array.from(ruleMap.values());
+  return Array.from(ruleMap.values())
 }
 
 /**
@@ -84,30 +80,27 @@ export function mergeRules(customRules: ReleaseRule[]): ReleaseRule[] {
  * Breaking changes always result in a major bump (or minor if in 0.x.y range,
  * following SemVer conventions for initial development).
  */
-export function determineBump(
-  commits: ConventionalCommit[],
-  rules: ReleaseRule[],
-): BumpType {
-  const ruleMap = new Map<string, ReleaseRule>();
+export function determineBump(commits: ConventionalCommit[], rules: ReleaseRule[]): BumpType {
+  const ruleMap = new Map<string, ReleaseRule>()
   for (const rule of rules) {
-    ruleMap.set(rule.type, rule);
+    ruleMap.set(rule.type, rule)
   }
 
-  let highest: BumpType = 'none';
+  let highest: BumpType = 'none'
 
   for (const commit of commits) {
     // Breaking changes always trigger major
     if (commit.breaking) {
-      return 'major';
+      return 'major'
     }
 
-    const rule = ruleMap.get(commit.type);
+    const rule = ruleMap.get(commit.type)
     if (rule) {
-      highest = higherBump(highest, rule.bump);
+      highest = higherBump(highest, rule.bump)
     }
   }
 
-  return highest;
+  return highest
 }
 
 /** Compare two bump types and return the higher priority one. */
@@ -117,7 +110,7 @@ function higherBump(a: BumpType, b: BumpType): BumpType {
     patch: 1,
     minor: 2,
     major: 3,
-  };
+  }
 
-  return priority[a] >= priority[b] ? a : b;
+  return priority[a] >= priority[b] ? a : b
 }

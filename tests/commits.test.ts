@@ -1,91 +1,92 @@
-import { describe, it, expect } from 'vitest';
-import { parseCommit, parseCommits } from '../src/commits.js';
+import { describe, expect, it } from 'vitest'
+
+import { parseCommit, parseCommits } from '../src/commits.js'
 
 describe('parseCommit', () => {
   it('should parse a simple feat commit', () => {
-    const result = parseCommit('feat: add new feature', 'abc123');
-    expect(result).not.toBeNull();
-    expect(result!.type).toBe('feat');
-    expect(result!.scope).toBeNull();
-    expect(result!.breaking).toBe(false);
-    expect(result!.description).toBe('add new feature');
-    expect(result!.hash).toBe('abc123');
-  });
+    const result = parseCommit('feat: add new feature', 'abc123')
+    expect(result).not.toBeNull()
+    expect(result?.type).toBe('feat')
+    expect(result?.scope).toBeNull()
+    expect(result?.breaking).toBe(false)
+    expect(result?.description).toBe('add new feature')
+    expect(result?.hash).toBe('abc123')
+  })
 
   it('should parse a commit with scope', () => {
-    const result = parseCommit('fix(auth): resolve login issue', 'def456');
-    expect(result!.type).toBe('fix');
-    expect(result!.scope).toBe('auth');
-    expect(result!.description).toBe('resolve login issue');
-  });
+    const result = parseCommit('fix(auth): resolve login issue', 'def456')
+    expect(result?.type).toBe('fix')
+    expect(result?.scope).toBe('auth')
+    expect(result?.description).toBe('resolve login issue')
+  })
 
   it('should detect breaking change via ! mark', () => {
-    const result = parseCommit('feat!: remove deprecated API', 'ghi789');
-    expect(result!.breaking).toBe(true);
-    expect(result!.type).toBe('feat');
-  });
+    const result = parseCommit('feat!: remove deprecated API', 'ghi789')
+    expect(result?.breaking).toBe(true)
+    expect(result?.type).toBe('feat')
+  })
 
   it('should detect breaking change via ! mark with scope', () => {
-    const result = parseCommit('feat(api)!: remove deprecated endpoints', 'x1');
-    expect(result!.breaking).toBe(true);
-    expect(result!.scope).toBe('api');
-  });
+    const result = parseCommit('feat(api)!: remove deprecated endpoints', 'x1')
+    expect(result?.breaking).toBe(true)
+    expect(result?.scope).toBe('api')
+  })
 
   it('should detect breaking change via BREAKING CHANGE footer', () => {
     const message = `feat: refactor user model
 
-BREAKING CHANGE: The user model has been completely restructured.`;
-    const result = parseCommit(message, 'jkl012');
-    expect(result!.breaking).toBe(true);
-    expect(result!.footers).toHaveLength(1);
-    expect(result!.footers[0]!.key).toBe('BREAKING CHANGE');
-  });
+BREAKING CHANGE: The user model has been completely restructured.`
+    const result = parseCommit(message, 'jkl012')
+    expect(result?.breaking).toBe(true)
+    expect(result?.footers).toHaveLength(1)
+    expect(result?.footers[0]?.key).toBe('BREAKING CHANGE')
+  })
 
   it('should detect breaking change via BREAKING-CHANGE footer', () => {
     const message = `feat: refactor user model
 
-BREAKING-CHANGE: The user model has been completely restructured.`;
-    const result = parseCommit(message, 'mno345');
-    expect(result!.breaking).toBe(true);
-  });
+BREAKING-CHANGE: The user model has been completely restructured.`
+    const result = parseCommit(message, 'mno345')
+    expect(result?.breaking).toBe(true)
+  })
 
   it('should parse commit body', () => {
     const message = `fix: resolve memory leak
 
 The connection pool was not being properly closed
-when the application shut down.`;
-    const result = parseCommit(message, 'pqr678');
-    expect(result!.body).toContain('connection pool');
-  });
+when the application shut down.`
+    const result = parseCommit(message, 'pqr678')
+    expect(result?.body).toContain('connection pool')
+  })
 
   it('should parse multiple footers', () => {
     const message = `feat: add login
 
 Reviewed-by: Alice
-Closes: #123`;
-    const result = parseCommit(message, 'stu901');
-    expect(result!.footers).toHaveLength(2);
-    expect(result!.footers[0]!.key).toBe('Reviewed-by');
-    expect(result!.footers[1]!.key).toBe('Closes');
-  });
+Closes: #123`
+    const result = parseCommit(message, 'stu901')
+    expect(result?.footers).toHaveLength(2)
+    expect(result?.footers[0]?.key).toBe('Reviewed-by')
+    expect(result?.footers[1]?.key).toBe('Closes')
+  })
 
   it('should handle squash merge format', () => {
-    const result = parseCommit('feat: add new feature (#42)', 'vwx234');
-    expect(result!.type).toBe('feat');
-    expect(result!.description).toBe('add new feature');
-  });
+    const result = parseCommit('feat: add new feature (#42)', 'vwx234')
+    expect(result?.type).toBe('feat')
+    expect(result?.description).toBe('add new feature')
+  })
 
   it('should return null for non-conventional commit', () => {
-    expect(parseCommit('just a regular commit', 'abc')).toBeNull();
-    expect(parseCommit('Update README.md', 'def')).toBeNull();
-    expect(parseCommit('Merge pull request #123', 'ghi')).toBeNull();
-  });
+    expect(parseCommit('just a regular commit', 'abc')).toBeNull()
+    expect(parseCommit('Update README.md', 'def')).toBeNull()
+    expect(parseCommit('Merge pull request #123', 'ghi')).toBeNull()
+  })
 
   it('should normalize type to lowercase', () => {
-    const result = parseCommit('FEAT: uppercase type', 'abc');
-    expect(result!.type).toBe('feat');
-  });
-});
+    const result = parseCommit('FEAT: uppercase type', 'abc')
+    expect(result?.type).toBe('feat')
+  })
+})
 
 describe('parseCommits', () => {
   it('should filter out non-conventional commits', () => {
@@ -94,18 +95,18 @@ describe('parseCommits', () => {
       { message: 'just a message', hash: 'b' },
       { message: 'fix: bug fix', hash: 'c' },
       { message: 'Merge branch main', hash: 'd' },
-    ];
-    const result = parseCommits(commits);
-    expect(result).toHaveLength(2);
-    expect(result[0]!.type).toBe('feat');
-    expect(result[1]!.type).toBe('fix');
-  });
+    ]
+    const result = parseCommits(commits)
+    expect(result).toHaveLength(2)
+    expect(result[0]?.type).toBe('feat')
+    expect(result[1]?.type).toBe('fix')
+  })
 
   it('should return empty array for no conventional commits', () => {
     const commits = [
       { message: 'random message', hash: 'a' },
       { message: 'another one', hash: 'b' },
-    ];
-    expect(parseCommits(commits)).toHaveLength(0);
-  });
-});
+    ]
+    expect(parseCommits(commits)).toHaveLength(0)
+  })
+})
