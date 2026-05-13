@@ -1,0 +1,87 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [{ "type": true }, ":BLANK_LINE:", [":URL:", ":PACKAGE_WITH_PROTOCOL:", ":PACKAGE:"], ":BLANK_LINE:", ":NODE:", ":BLANK_LINE:", ":ALIAS:", ":PATH:"]
+          }
+        },
+        "recommended": true
+      }
+    },
+    "enabled": true
+  },
+  "files": {
+    "includes": ["src/**/*.{ts,js,mjs}", "tests/**/*.{ts,js,mjs}", "!**/package.json", "!**/pnpm-lock.yaml", "!**/tsconfig.json", "!**/*.md"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineEnding": "lf",
+    "lineWidth": 200
+  },
+  "javascript": {
+    "formatter": {
+      "arrowParentheses": "asNeeded",
+      "quoteStyle": "single",
+      "quoteProperties": "asNeeded",
+      "semicolons": "asNeeded",
+      "trailingCommas": "es5"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "recommended": true,
+        "useSimplifiedLogicExpression": "off"
+      },
+      "correctness": {
+        "recommended": true,
+        "noNodejsModules": "off"
+      },
+      "performance": {
+        "recommended": true,
+        "useTopLevelRegex": "off"
+      },
+      "security": {
+        "recommended": true
+      },
+      "style": {
+        "recommended": true,
+        "noProcessEnv": "off",
+        "useForOf": "error"
+      },
+      "suspicious": {
+        "recommended": true,
+        "noExplicitAny": "error",
+        "noVar": "error"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.test.ts", "**/*.spec.ts", "tests/**/*.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "useArrowFunction": "off"
+          },
+          "suspicious": {
+            "noExplicitAny": "warn"
+          }
+        }
+      }
+    }
+  ],
+  "vcs": {
+    "clientKind": "git",
+    "enabled": true,
+    "useIgnoreFile": false
+  }
+}

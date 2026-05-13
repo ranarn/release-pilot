@@ -4,43 +4,41 @@
  * Provides functions to interact with the local git repository.
  */
 
-import * as exec from '@actions/exec';
-import type { TagInfo } from './types.js';
+import type { TagInfo } from './types.js'
+
+import * as exec from '@actions/exec'
 
 /**
  * Get the list of commits between two refs.
  *
  * Returns commits in reverse chronological order (newest first).
  */
-export async function getCommitsBetween(
-  from: string | null,
-  to: string,
-): Promise<Array<{ message: string; hash: string }>> {
-  const range = from ? `${from}..${to}` : to;
+export async function getCommitsBetween(from: string | null, to: string): Promise<Array<{ message: string; hash: string }>> {
+  const range = from ? `${from}..${to}` : to
 
   // Use %x00 as delimiter between fields and %x01 as delimiter between commits
-  const format = '%H%x00%B%x01';
+  const format = '%H%x00%B%x01'
 
-  let output = '';
-  await exec.exec('git', ['log', '--format=' + format, range], {
+  let output = ''
+  await exec.exec('git', ['log', `--format=${format}`, range], {
     silent: true,
     listeners: {
-      stdout: (data) => {
-        output += data.toString();
+      stdout: data => {
+        output += data.toString()
       },
     },
-  });
+  })
 
   return output
     .split('\x01')
-    .map((entry) => entry.trim())
+    .map(entry => entry.trim())
     .filter(Boolean)
-    .map((entry) => {
-      const separatorIdx = entry.indexOf('\x00');
-      const hash = entry.slice(0, separatorIdx);
-      const message = entry.slice(separatorIdx + 1).trim();
-      return { message, hash };
-    });
+    .map(entry => {
+      const separatorIdx = entry.indexOf('\x00')
+      const hash = entry.slice(0, separatorIdx)
+      const message = entry.slice(separatorIdx + 1).trim()
+      return { message, hash }
+    })
 }
 
 /**
@@ -49,73 +47,58 @@ export async function getCommitsBetween(
  * Returns tags sorted by version (newest first).
  */
 export async function listTags(prefix: string): Promise<TagInfo[]> {
-  let output = '';
-  const exitCode = await exec.exec(
-    'git',
-    ['tag', '--list', '--sort=-version:refname', `${prefix}*`],
-    {
-      silent: true,
-      ignoreReturnCode: true,
-      listeners: {
-        stdout: (data) => {
-          output += data.toString();
-        },
+  let output = ''
+  // Use --format to get name and commit SHA in one call instead of N+1 rev-list calls.
+  // %(*objectname) dereferences annotated tag objects to the commit SHA; empty for lightweight tags.
+  // %(objectname) is the tag object SHA for annotated tags, or the commit SHA for lightweight tags.
+  const exitCode = await exec.exec('git', ['tag', '--list', '--sort=-version:refname', '--format=%(refname:short)\t%(*objectname)\t%(objectname)', `${prefix}*`], {
+    silent: true,
+    ignoreReturnCode: true,
+    listeners: {
+      stdout: data => {
+        output += data.toString()
       },
     },
-  );
+  })
 
   if (exitCode !== 0) {
-    return [];
+    return []
   }
 
-  const tags: TagInfo[] = [];
+  const tags: TagInfo[] = []
 
   for (const line of output.split('\n')) {
-    const name = line.trim();
-    if (!name) continue;
+    const trimmed = line.trim()
+    if (!trimmed) continue
 
-    // Get the commit SHA for this tag
-    let sha = '';
-    await exec.exec('git', ['rev-list', '-1', name], {
-      silent: true,
-      listeners: {
-        stdout: (data) => {
-          sha += data.toString().trim();
-        },
-      },
-    });
+    const parts = trimmed.split('\t')
+    const name = parts[0]
+    if (!name) continue
 
-    const version = name.startsWith(prefix)
-      ? name.slice(prefix.length)
-      : name;
+    // For annotated tags parts[1] is the dereferenced commit SHA; for lightweight tags it is empty and parts[2] is the commit SHA.
+    const sha = parts[1]?.trim() || parts[2]?.trim() || ''
+    const version = name.startsWith(prefix) ? name.slice(prefix.length) : name
 
-    tags.push({ name, sha, version });
+    tags.push({ name, sha, version })
   }
 
-  return tags;
+  return tags
 }
 
 /**
  * Create a lightweight git tag.
  */
-export async function createLightweightTag(
-  tag: string,
-  sha: string,
-): Promise<void> {
-  await exec.exec('git', ['tag', tag, sha]);
-  await exec.exec('git', ['push', 'origin', tag]);
+export async function createLightweightTag(tag: string, sha: string): Promise<void> {
+  await exec.exec('git', ['tag', tag, sha])
+  await exec.exec('git', ['push', 'origin', tag])
 }
 
 /**
  * Create an annotated git tag with a message.
  */
-export async function createAnnotatedTag(
-  tag: string,
-  sha: string,
-  message: string,
-): Promise<void> {
-  await exec.exec('git', ['tag', '-a', tag, sha, '-m', message]);
-  await exec.exec('git', ['push', 'origin', tag]);
+export async function createAnnotatedTag(tag: string, sha: string, message: string): Promise<void> {
+  await exec.exec('git', ['tag', '-a', tag, sha, '-m', message])
+  await exec.exec('git', ['push', 'origin', tag])
 }
 
 /**
@@ -124,26 +107,23 @@ export async function createAnnotatedTag(
  * Used for floating major/minor tags like `v2` or `v2.3` that always
  * track the latest release in their range.
  */
-export async function forceUpdateTag(
-  tag: string,
-  sha: string,
-): Promise<void> {
+export async function forceUpdateTag(tag: string, sha: string): Promise<void> {
   // Create or move the local tag
-  await exec.exec('git', ['tag', '-f', tag, sha]);
+  await exec.exec('git', ['tag', '-f', tag, sha])
   // Force-push to remote (creates if new, moves if existing)
-  await exec.exec('git', ['push', 'origin', tag, '--force']);
+  await exec.exec('git', ['push', 'origin', tag, '--force'])
 }
 
 /**
  * Get the current branch name from a ref.
  */
 export function getBranchFromRef(ref: string): string {
-  return ref.replace('refs/heads/', '');
+  return ref.replace('refs/heads/', '')
 }
 
 /**
  * Check if a ref is a pull request.
  */
 export function isPullRequest(ref: string): boolean {
-  return ref.includes('refs/pull/');
+  return ref.includes('refs/pull/')
 }

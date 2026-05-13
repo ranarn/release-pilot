@@ -5,7 +5,12 @@ coverage/
 .DS_Store
 Thumbs.db
 
+# AI tooling — local only, not for the public repo
+.serena/
+.claude/
+CLAUDE.md
+
 # Note: dist/ is NOT ignored — GitHub Actions require the built output to be committed.
-# Run `pnpm build` before committing.
+# CI auto-builds and commits dist/ on every push to main.
 
 # Note: pnpm-lock.yaml is NOT ignored — required for reproducible CI builds.
