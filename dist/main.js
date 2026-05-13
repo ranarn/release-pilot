@@ -22731,151 +22731,10 @@ function info(message) {
   process.stdout.write(message + os5.EOL);
 }
 
-// src/action.ts
+// src/core/action.ts
 var semver2 = __toESM(require_semver2(), 1);
 
-// src/changelog.ts
-function generateChangelog(commits, rules, options = {}) {
-  const { repositoryUrl, includeBody = false } = options;
-  if (commits.length === 0) {
-    return "";
-  }
-  const sectionMap = /* @__PURE__ */ new Map();
-  for (const rule of rules) {
-    if (rule.section) {
-      sectionMap.set(rule.type, rule.section);
-    }
-  }
-  const sections = groupCommits(commits, sectionMap);
-  const breakingChanges = commits.filter((c) => c.breaking);
-  const parts = [];
-  if (breakingChanges.length > 0) {
-    parts.push("### \u{1F4A5} Breaking Changes\n");
-    for (const commit of breakingChanges) {
-      parts.push(formatCommitLine(commit, repositoryUrl));
-      const breakingFooter = commit.footers.find((f) => f.key === "BREAKING CHANGE" || f.key === "BREAKING-CHANGE");
-      if (breakingFooter) {
-        parts.push(`  > ${breakingFooter.value}
-`);
-      }
-    }
-    parts.push("");
-  }
-  for (const section of sections) {
-    const nonBreaking = section.commits.filter((c) => !c.breaking);
-    if (nonBreaking.length === 0) continue;
-    parts.push(`### ${section.title}
-`);
-    for (const commit of nonBreaking) {
-      parts.push(formatCommitLine(commit, repositoryUrl));
-      if (includeBody && commit.body) {
-        const bodyLines = commit.body.split("\n").map((line) => `  ${line}`).join("\n");
-        parts.push(`${bodyLines}
-`);
-      }
-    }
-    parts.push("");
-  }
-  return parts.join("\n").trim();
-}
-function formatCommitLine(commit, repositoryUrl) {
-  const scope = commit.scope ? `**${commit.scope}:** ` : "";
-  const hash = commit.hash ? repositoryUrl ? ` ([${commit.hash.slice(0, 7)}](${repositoryUrl}/commit/${commit.hash}))` : ` (${commit.hash.slice(0, 7)})` : "";
-  return `- ${scope}${commit.description}${hash}`;
-}
-function groupCommits(commits, sectionMap) {
-  const groups = /* @__PURE__ */ new Map();
-  for (const commit of commits) {
-    const sectionTitle = sectionMap.get(commit.type);
-    if (!sectionTitle) continue;
-    const existing = groups.get(sectionTitle) || [];
-    existing.push(commit);
-    groups.set(sectionTitle, existing);
-  }
-  const orderedSections = [];
-  const seenTitles = /* @__PURE__ */ new Set();
-  for (const [, title] of sectionMap) {
-    if (seenTitles.has(title)) continue;
-    seenTitles.add(title);
-    const sectionCommits = groups.get(title);
-    if (sectionCommits && sectionCommits.length > 0) {
-      orderedSections.push({ title, commits: sectionCommits });
-    }
-  }
-  return orderedSections;
-}
-
-// src/commits.ts
-var HEADER_REGEX = /^(\w+)(?:\(([^)]*)\))?(!)?\s*:\s*(.+)$/;
-var FOOTER_REGEX = /^(BREAKING[ -]CHANGE|[\w-]+)\s*:\s*(.*)$/;
-var FOOTER_HASH_REGEX = /^([\w-]+)\s+(#.*)$/;
-function parseCommit(message, hash = "") {
-  const lines = message.trim().split("\n");
-  const headerLine = lines[0]?.trim();
-  if (!headerLine) return null;
-  const cleanHeader = headerLine.replace(/\s*\(#\d+\)\s*$/, "");
-  const headerMatch = cleanHeader.match(HEADER_REGEX);
-  if (!headerMatch) return null;
-  const [, type, scope, breakingMark, description] = headerMatch;
-  if (!type || !description) return null;
-  const { body, footers } = parseBodyAndFooters(lines.slice(1));
-  const breaking = breakingMark === "!" || footers.some((f) => f.key === "BREAKING CHANGE" || f.key === "BREAKING-CHANGE");
-  return {
-    raw: message,
-    type: type.toLowerCase(),
-    scope: scope || null,
-    breaking,
-    description: description.trim(),
-    body,
-    footers,
-    hash
-  };
-}
-function parseBodyAndFooters(lines) {
-  if (lines.length === 0) {
-    return { body: null, footers: [] };
-  }
-  const bodyLines = [];
-  const footers = [];
-  let inFooters = false;
-  const startIdx = lines[0]?.trim() === "" ? 1 : 0;
-  for (const line of lines.slice(startIdx)) {
-    const trimmed = line.trim();
-    const footerMatch = trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX);
-    if (footerMatch) {
-      const key = footerMatch[1];
-      const rawValue = footerMatch[2];
-      if (key === void 0 || rawValue === void 0) continue;
-      inFooters = true;
-      footers.push({ key, value: rawValue.trim() });
-    } else if (inFooters && trimmed !== "") {
-      const lastFooter = footers.at(-1);
-      if (lastFooter) {
-        lastFooter.value += `
-${trimmed}`;
-      }
-    } else if (!inFooters) {
-      bodyLines.push(line);
-    }
-  }
-  const body = bodyLines.join("\n").trim() || null;
-  return { body, footers };
-}
-function isSkipCi(message) {
-  return /\[skip[ _-]?ci\]/i.test(message);
-}
-function parseCommits(commits) {
-  const parsed = [];
-  for (const commit of commits) {
-    const result = parseCommit(commit.message, commit.hash);
-    if (result) {
-      parsed.push(result);
-    }
-  }
-  return parsed;
-}
-
-// src/git.ts
+// src/git/git.ts
 async function getCommitsBetween(from, to) {
   const range = from ? `${from}..${to}` : to;
   const format = "%H%x00%B%x01";
@@ -26690,7 +26549,7 @@ function getOctokit(token, options, ...additionalPlugins) {
   return new GitHubWithPlugins(getOctokitOptions(token, options));
 }
 
-// src/github.ts
+// src/git/github.ts
 async function createRelease(options) {
   const { token, tag, title, body, draft, prerelease } = options;
   const octokit = getOctokit(token);
@@ -26708,7 +26567,148 @@ async function createRelease(options) {
   return response.data.html_url;
 }
 
-// src/rules.ts
+// src/release/changelog.ts
+function generateChangelog(commits, rules, options = {}) {
+  const { repositoryUrl, includeBody = false } = options;
+  if (commits.length === 0) {
+    return "";
+  }
+  const sectionMap = /* @__PURE__ */ new Map();
+  for (const rule of rules) {
+    if (rule.section) {
+      sectionMap.set(rule.type, rule.section);
+    }
+  }
+  const sections = groupCommits(commits, sectionMap);
+  const breakingChanges = commits.filter((c) => c.breaking);
+  const parts = [];
+  if (breakingChanges.length > 0) {
+    parts.push("### \u{1F4A5} Breaking Changes\n");
+    for (const commit of breakingChanges) {
+      parts.push(formatCommitLine(commit, repositoryUrl));
+      const breakingFooter = commit.footers.find((f) => f.key === "BREAKING CHANGE" || f.key === "BREAKING-CHANGE");
+      if (breakingFooter) {
+        parts.push(`  > ${breakingFooter.value}
+`);
+      }
+    }
+    parts.push("");
+  }
+  for (const section of sections) {
+    const nonBreaking = section.commits.filter((c) => !c.breaking);
+    if (nonBreaking.length === 0) continue;
+    parts.push(`### ${section.title}
+`);
+    for (const commit of nonBreaking) {
+      parts.push(formatCommitLine(commit, repositoryUrl));
+      if (includeBody && commit.body) {
+        const bodyLines = commit.body.split("\n").map((line) => `  ${line}`).join("\n");
+        parts.push(`${bodyLines}
+`);
+      }
+    }
+    parts.push("");
+  }
+  return parts.join("\n").trim();
+}
+function formatCommitLine(commit, repositoryUrl) {
+  const scope = commit.scope ? `**${commit.scope}:** ` : "";
+  const hash = commit.hash ? repositoryUrl ? ` ([${commit.hash.slice(0, 7)}](${repositoryUrl}/commit/${commit.hash}))` : ` (${commit.hash.slice(0, 7)})` : "";
+  return `- ${scope}${commit.description}${hash}`;
+}
+function groupCommits(commits, sectionMap) {
+  const groups = /* @__PURE__ */ new Map();
+  for (const commit of commits) {
+    const sectionTitle = sectionMap.get(commit.type);
+    if (!sectionTitle) continue;
+    const existing = groups.get(sectionTitle) || [];
+    existing.push(commit);
+    groups.set(sectionTitle, existing);
+  }
+  const orderedSections = [];
+  const seenTitles = /* @__PURE__ */ new Set();
+  for (const [, title] of sectionMap) {
+    if (seenTitles.has(title)) continue;
+    seenTitles.add(title);
+    const sectionCommits = groups.get(title);
+    if (sectionCommits && sectionCommits.length > 0) {
+      orderedSections.push({ title, commits: sectionCommits });
+    }
+  }
+  return orderedSections;
+}
+
+// src/release/commits.ts
+var HEADER_REGEX = /^(\w+)(?:\(([^)]*)\))?(!)?\s*:\s*(.+)$/;
+var FOOTER_REGEX = /^(BREAKING[ -]CHANGE|[\w-]+)\s*:\s*(.*)$/;
+var FOOTER_HASH_REGEX = /^([\w-]+)\s+(#.*)$/;
+function parseCommit(message, hash = "") {
+  const lines = message.trim().split("\n");
+  const headerLine = lines[0]?.trim();
+  if (!headerLine) return null;
+  const cleanHeader = headerLine.replace(/\s*\(#\d+\)\s*$/, "");
+  const headerMatch = cleanHeader.match(HEADER_REGEX);
+  if (!headerMatch) return null;
+  const [, type, scope, breakingMark, description] = headerMatch;
+  if (!type || !description) return null;
+  const { body, footers } = parseBodyAndFooters(lines.slice(1));
+  const breaking = breakingMark === "!" || footers.some((f) => f.key === "BREAKING CHANGE" || f.key === "BREAKING-CHANGE");
+  return {
+    raw: message,
+    type: type.toLowerCase(),
+    scope: scope || null,
+    breaking,
+    description: description.trim(),
+    body,
+    footers,
+    hash
+  };
+}
+function parseBodyAndFooters(lines) {
+  if (lines.length === 0) {
+    return { body: null, footers: [] };
+  }
+  const bodyLines = [];
+  const footers = [];
+  let inFooters = false;
+  const startIdx = lines[0]?.trim() === "" ? 1 : 0;
+  for (const line of lines.slice(startIdx)) {
+    const trimmed = line.trim();
+    const footerMatch = trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX);
+    if (footerMatch) {
+      const key = footerMatch[1];
+      const rawValue = footerMatch[2];
+      if (key === void 0 || rawValue === void 0) continue;
+      inFooters = true;
+      footers.push({ key, value: rawValue.trim() });
+    } else if (inFooters && trimmed !== "") {
+      const lastFooter = footers.at(-1);
+      if (lastFooter) {
+        lastFooter.value += `
+${trimmed}`;
+      }
+    } else if (!inFooters) {
+      bodyLines.push(line);
+    }
+  }
+  const body = bodyLines.join("\n").trim() || null;
+  return { body, footers };
+}
+function isSkipCi(message) {
+  return /\[skip[ _-]?ci\]/i.test(message);
+}
+function parseCommits(commits) {
+  const parsed = [];
+  for (const commit of commits) {
+    const result = parseCommit(commit.message, commit.hash);
+    if (result) {
+      parsed.push(result);
+    }
+  }
+  return parsed;
+}
+
+// src/release/rules.ts
 var DEFAULT_RULES = [
   { type: "feat", bump: "minor", section: "\u{1F680} Features" },
   { type: "fix", bump: "patch", section: "\u{1F41B} Bug Fixes" },
@@ -26777,7 +26777,7 @@ function higherBump(a, b) {
   return priority[a] >= priority[b] ? a : b;
 }
 
-// src/summary.ts
+// src/release/summary.ts
 async function writeSummary(options) {
   const { result, commits, changelog, releaseUrl, dryRun } = options;
   const summary2 = summary;
@@ -26836,7 +26836,7 @@ async function writeSummary(options) {
   await summary2.write();
 }
 
-// src/version.ts
+// src/release/version.ts
 var semver = __toESM(require_semver2(), 1);
 function calculateVersion(options) {
   const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease, prereleaseSuffix } = options;
@@ -26923,7 +26923,7 @@ function sanitizeIdentifier(input) {
   return input.replace(/[^a-zA-Z0-9-]/g, "-").replace(/-+/g, "-");
 }
 
-// src/action.ts
+// src/core/action.ts
 function getConfig() {
   const customRulesInput = getInput("custom-rules");
   return {
