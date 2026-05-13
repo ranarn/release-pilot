@@ -7,7 +7,7 @@ await build({
   target: 'node24',
   format: 'esm',
   outfile: 'dist/main.js',
-  sourcemap: true,
+  sourcemap: false,
   minify: false, // Keep readable for debugging in Actions
   banner: {
     js: `
