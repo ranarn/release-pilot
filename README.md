@@ -49,7 +49,7 @@ jobs:
           fetch-depth: 0
 
       - name: ✈️ Release Pilot
-        uses: your-username/release-pilot@v1
+        uses: ranarn/release-pilot@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 ```
@@ -67,7 +67,7 @@ That's it. **Zero config.** Release Pilot will:
 
 ```yaml
 - name: ✈️ Release Pilot
-  uses: your-username/release-pilot@v1
+  uses: ranarn/release-pilot@v1
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
     create-release: true
@@ -79,7 +79,7 @@ That's it. **Zero config.** Release Pilot will:
 ```yaml
 - name: ✈️ Release Pilot
   id: release
-  uses: your-username/release-pilot@v1
+  uses: ranarn/release-pilot@v1
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -94,7 +94,7 @@ That's it. **Zero config.** Release Pilot will:
 
 ```yaml
 - name: ✈️ Release Pilot
-  uses: your-username/release-pilot@v1
+  uses: ranarn/release-pilot@v1
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
     prerelease: true
@@ -106,7 +106,7 @@ That's it. **Zero config.** Release Pilot will:
 
 ```yaml
 - name: ✈️ Preview Release
-  uses: your-username/release-pilot@v1
+  uses: ranarn/release-pilot@v1
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
     dry-run: true
@@ -116,7 +116,7 @@ That's it. **Zero config.** Release Pilot will:
 
 ```yaml
 - name: ✈️ Release Pilot
-  uses: your-username/release-pilot@v1
+  uses: ranarn/release-pilot@v1
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
     custom-rules: 'hotfix:patch:🔥 Hotfixes,improvement:minor:💡 Improvements'
@@ -129,7 +129,7 @@ just like `actions/checkout@v4` does:
 
 ```yaml
 - name: ✈️ Release Pilot
-  uses: your-username/release-pilot@v1
+  uses: ranarn/release-pilot@v1
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
     major-tag: true    # v2 always points to latest v2.x.x
