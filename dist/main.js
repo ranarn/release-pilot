@@ -22861,6 +22861,9 @@ ${trimmed}`;
   const body = bodyLines.join("\n").trim() || null;
   return { body, footers };
 }
+function isSkipCi(message) {
+  return /\[skip[ _-]?ci\]/i.test(message);
+}
 function parseCommits(commits) {
   const parsed = [];
   for (const commit of commits) {
@@ -26991,8 +26994,10 @@ async function run() {
     info("\u{1F4CC} No previous tags found \u2014 this will be the initial release.");
   }
   info("\u{1F4DD} Analyzing commits...");
-  const rawCommits = await getCommitsBetween(latestTag?.sha ?? null, commitRef);
-  info(`Found ${rawCommits.length} commit(s) since last tag.`);
+  const allCommits = await getCommitsBetween(latestTag?.sha ?? null, commitRef);
+  const rawCommits = allCommits.filter((c) => !isSkipCi(c.message));
+  const skippedCount = allCommits.length - rawCommits.length;
+  info(`Found ${rawCommits.length} commit(s) since last tag${skippedCount > 0 ? ` (${skippedCount} [skip ci] commit(s) excluded)` : ""}.`);
   if (rawCommits.length === 0 && latestTag) {
     info("No new commits. Nothing to release.");
     setOutput("released", "false");
