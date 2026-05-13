@@ -1,0 +1,118 @@
+name: 'Release Pilot'
+description: 'The definitive GitHub Action for semantic versioning, tagging, changelog generation, and releases — powered by Conventional Commits.'
+author: 'Jonas Ranerfors'
+
+branding:
+  icon: 'send'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'GitHub token for authentication. Required for tagging and creating releases.'
+    required: true
+    default: ${{ github.token }}
+
+  prefix:
+    description: 'Prefix for the version tag (e.g., "v" produces "v1.2.3").'
+    required: false
+    default: 'v'
+
+  default-bump:
+    description: 'Bump type when no conventional commit type is found. Set to "false" to skip tagging when no bump is detected.'
+    required: false
+    default: 'patch'
+
+  initial-version:
+    description: 'The version to use when no previous tags exist.'
+    required: false
+    default: '0.1.0'
+
+  prerelease:
+    description: 'Create a prerelease version. When true, versions are suffixed with the prerelease identifier.'
+    required: false
+    default: 'false'
+
+  prerelease-suffix:
+    description: 'Identifier appended to prerelease versions (e.g., "beta" → 1.2.3-beta.0). Defaults to the sanitized branch name.'
+    required: false
+    default: ''
+
+  branches:
+    description: 'Comma-separated list of branch patterns (regex) that trigger releases. Non-matching branches are skipped.'
+    required: false
+    default: 'main,master'
+
+  create-release:
+    description: 'Create a GitHub Release alongside the tag.'
+    required: false
+    default: 'false'
+
+  release-draft:
+    description: 'Create the GitHub Release as a draft.'
+    required: false
+    default: 'false'
+
+  release-title:
+    description: 'Template for the release title. Use {{version}} and {{tag}} as placeholders.'
+    required: false
+    default: '{{tag}}'
+
+  annotated:
+    description: 'Create annotated tags (recommended) instead of lightweight tags.'
+    required: false
+    default: 'true'
+
+  commit-sha:
+    description: 'Override the commit SHA to tag. Defaults to GITHUB_SHA.'
+    required: false
+    default: ''
+
+  dry-run:
+    description: 'Calculate the next version and changelog without creating any tags or releases.'
+    required: false
+    default: 'false'
+
+  custom-rules:
+    description: |
+      Custom conventional commit rules as a comma-separated list.
+      Format: type:bump[:section]
+      Examples: "hotfix:patch:Bug Fixes,improvement:minor:Improvements"
+    required: false
+    default: ''
+
+  include-body-in-changelog:
+    description: 'Include commit body text in changelog entries.'
+    required: false
+    default: 'false'
+
+  major-tag:
+    description: 'Create/update a floating major version tag (e.g., v2 always points to the latest v2.x.x). Perfect for GitHub Actions.'
+    required: false
+    default: 'false'
+
+  minor-tag:
+    description: 'Create/update a floating minor version tag (e.g., v2.3 always points to the latest v2.3.x).'
+    required: false
+    default: 'false'
+
+outputs:
+  version:
+    description: 'The new version number without prefix (e.g., "1.2.3").'
+  tag:
+    description: 'The new tag with prefix (e.g., "v1.2.3").'
+  previous-version:
+    description: 'The previous version number without prefix.'
+  previous-tag:
+    description: 'The previous tag with prefix.'
+  bump:
+    description: 'The bump type that was applied: "major", "minor", "patch", or "none".'
+  changelog:
+    description: 'The generated changelog in markdown format.'
+  release-url:
+    description: 'URL to the GitHub Release (if created).'
+  released:
+    description: 'Whether a new version was actually released ("true" or "false").'
+
+runs:
+  using: 'node24'
+  main: 'dist/main.js'
