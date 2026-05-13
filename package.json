@@ -1,0 +1,44 @@
+{
+  "name": "release-pilot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The definitive GitHub Action for semantic versioning, tagging, changelog generation, and releases — powered by Conventional Commits.",
+  "main": "dist/main.js",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "check": "npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "github-action",
+    "semantic-versioning",
+    "semver",
+    "conventional-commits",
+    "changelog",
+    "release",
+    "tagging",
+    "automation"
+  ],
+  "author": "Jonas Ranerfors",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^6.0.0",
+    "semver": "^7.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/semver": "^7.7.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

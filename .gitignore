@@ -1,0 +1,9 @@
+node_modules/
+*.tsbuildinfo
+coverage/
+.env
+.DS_Store
+Thumbs.db
+
+# Note: dist/ is NOT ignored — GitHub Actions require the built output to be committed.
+# Run `npm run build` before committing.

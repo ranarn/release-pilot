@@ -1,0 +1,152 @@
+/**
+ * Conventional Commit parser.
+ *
+ * Parses commit messages following the Conventional Commits specification:
+ * https://www.conventionalcommits.org/
+ *
+ * Supports:
+ * - Standard types: feat, fix, chore, docs, style, refactor, perf, test, build, ci
+ * - Scopes: feat(api): ...
+ * - Breaking changes via `!` suffix: feat!: ... or feat(api)!: ...
+ * - Breaking changes via BREAKING CHANGE footer
+ * - Multi-line bodies and footers
+ * - Squash merge PR title parsing
+ */
+
+import type { ConventionalCommit, Footer } from './types.js';
+
+/**
+ * Regex to parse the conventional commit header.
+ *
+ * Groups:
+ * 1. type (e.g., feat, fix)
+ * 2. scope (optional, e.g., api)
+ * 3. breaking indicator (optional, !)
+ * 4. description (subject after colon)
+ */
+const HEADER_REGEX = /^(\w+)(?:\(([^)]*)\))?(!)?\s*:\s*(.+)$/;
+
+/**
+ * Regex to detect a footer token line.
+ * Matches: `BREAKING CHANGE: ...`, `Closes: #123`, `Reviewed-by: name`, etc.
+ * Also matches `BREAKING-CHANGE:` (with hyphen).
+ */
+const FOOTER_REGEX = /^(BREAKING[ -]CHANGE|[\w-]+)\s*:\s*(.*)$/;
+
+/**
+ * Regex to detect a footer with `#` separator (e.g., `Closes #123`).
+ */
+const FOOTER_HASH_REGEX = /^([\w-]+)\s+(#.*)$/;
+
+/**
+ * Parse a single commit message into a ConventionalCommit object.
+ *
+ * Returns `null` if the message doesn't follow conventional commit format.
+ */
+export function parseCommit(
+  message: string,
+  hash: string = '',
+): ConventionalCommit | null {
+  const lines = message.trim().split('\n');
+  const headerLine = lines[0]?.trim();
+
+  if (!headerLine) return null;
+
+  // Handle squash merge format: "feat: description (#123)"
+  const cleanHeader = headerLine.replace(/\s*\(#\d+\)\s*$/, '');
+
+  const headerMatch = cleanHeader.match(HEADER_REGEX);
+  if (!headerMatch) return null;
+
+  const [, type, scope, breakingMark, description] = headerMatch;
+
+  // Parse body and footers
+  const { body, footers } = parseBodyAndFooters(lines.slice(1));
+
+  // Determine if this is a breaking change
+  const breaking =
+    breakingMark === '!' ||
+    footers.some(
+      (f) =>
+        f.key === 'BREAKING CHANGE' || f.key === 'BREAKING-CHANGE',
+    );
+
+  return {
+    raw: message,
+    type: type!.toLowerCase(),
+    scope: scope || null,
+    breaking,
+    description: description!.trim(),
+    body,
+    footers,
+    hash,
+  };
+}
+
+/**
+ * Parse the body and footer sections from remaining commit lines.
+ */
+function parseBodyAndFooters(lines: string[]): {
+  body: string | null;
+  footers: Footer[];
+} {
+  if (lines.length === 0) {
+    return { body: null, footers: [] };
+  }
+
+  const bodyLines: string[] = [];
+  const footers: Footer[] = [];
+  let inFooters = false;
+
+  // Skip the first blank separator line
+  let startIdx = 0;
+  if (lines[0]?.trim() === '') {
+    startIdx = 1;
+  }
+
+  for (let i = startIdx; i < lines.length; i++) {
+    const line = lines[i]!;
+    const trimmed = line.trim();
+
+    // Check if this line starts a footer section
+    const footerMatch =
+      trimmed.match(FOOTER_REGEX) || trimmed.match(FOOTER_HASH_REGEX);
+
+    if (footerMatch) {
+      inFooters = true;
+      footers.push({
+        key: footerMatch[1]!,
+        value: footerMatch[2]!.trim(),
+      });
+    } else if (inFooters && trimmed !== '') {
+      // Continuation of previous footer value
+      if (footers.length > 0) {
+        footers[footers.length - 1]!.value += '\n' + trimmed;
+      }
+    } else if (!inFooters) {
+      bodyLines.push(line);
+    }
+  }
+
+  const body = bodyLines.join('\n').trim() || null;
+  return { body, footers };
+}
+
+/**
+ * Parse multiple commit messages into ConventionalCommit objects.
+ * Non-conventional commits are silently skipped.
+ */
+export function parseCommits(
+  commits: Array<{ message: string; hash: string }>,
+): ConventionalCommit[] {
+  const parsed: ConventionalCommit[] = [];
+
+  for (const commit of commits) {
+    const result = parseCommit(commit.message, commit.hash);
+    if (result) {
+      parsed.push(result);
+    }
+  }
+
+  return parsed;
+}
