@@ -10,7 +10,7 @@ import * as core from '@actions/core'
 import * as semver from 'semver'
 
 import { generateChangelog } from './changelog.js'
-import { parseCommits } from './commits.js'
+import { isSkipCi, parseCommits } from './commits.js'
 import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, listTags, setupGit } from './git.js'
 import { createRelease } from './github.js'
 import { determineBump, mergeRules, parseCustomRules } from './rules.js'
@@ -114,8 +114,10 @@ export async function run(): Promise<void> {
 
   // Get commits since last tag
   core.info('📝 Analyzing commits...')
-  const rawCommits = await getCommitsBetween(latestTag?.sha ?? null, commitRef)
-  core.info(`Found ${rawCommits.length} commit(s) since last tag.`)
+  const allCommits = await getCommitsBetween(latestTag?.sha ?? null, commitRef)
+  const rawCommits = allCommits.filter(c => !isSkipCi(c.message))
+  const skippedCount = allCommits.length - rawCommits.length
+  core.info(`Found ${rawCommits.length} commit(s) since last tag${skippedCount > 0 ? ` (${skippedCount} [skip ci] commit(s) excluded)` : ''}.`)
 
   if (rawCommits.length === 0 && latestTag) {
     core.info('No new commits. Nothing to release.')
