@@ -6,4 +6,6 @@ coverage/
 Thumbs.db
 
 # Note: dist/ is NOT ignored — GitHub Actions require the built output to be committed.
-# Run `npm run build` before committing.
+# Run `pnpm build` before committing.
+
+# Note: pnpm-lock.yaml is NOT ignored — required for reproducible CI builds.

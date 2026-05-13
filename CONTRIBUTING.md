@@ -5,10 +5,10 @@ Thank you for your interest in contributing! 🎉
 ## Development Setup
 
 ```bash
-npm install         # Install dependencies
-npm test            # Run tests (Vitest)
-npm run typecheck   # TypeScript type checking
-npm run build       # Bundle for distribution (esbuild)
+pnpm install         # Install dependencies
+pnpm test            # Run tests (Vitest)
+pnpm typecheck       # TypeScript type checking
+pnpm build           # Bundle for distribution (esbuild)
 ```
 
 ## Making Changes
@@ -19,9 +19,9 @@ npm run build       # Bundle for distribution (esbuild)
 4. Follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
 5. Ensure all checks pass:
    ```bash
-   npm run typecheck && npm test && npm run build
+   pnpm typecheck && pnpm test && pnpm build
    ```
-6. **Commit the updated `dist/` directory** — GitHub Actions runs from the bundled output
+6. **Run `pnpm build` and commit the updated `dist/` directory** — GitHub Actions runs from the bundled output
 7. Open a PR against `main`
 
 ## Commit Message Format
