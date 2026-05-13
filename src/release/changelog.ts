@@ -4,7 +4,7 @@
  * Generates beautiful, categorized markdown changelogs from conventional commits.
  */
 
-import type { ChangelogSection, ConventionalCommit, ReleaseRule } from './types.js'
+import type { ChangelogSection, ConventionalCommit, ReleaseRule } from '../core/types.js'
 
 /**
  * Generate a markdown changelog from parsed conventional commits.

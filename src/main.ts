@@ -4,7 +4,7 @@
 
 import * as core from '@actions/core'
 
-import { run } from './action.js'
+import { run } from './core/action.js'
 
 try {
   await run()

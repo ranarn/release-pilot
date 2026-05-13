@@ -8,7 +8,12 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/main.ts'],
+      exclude: [
+        'src/main.ts',            // entry point only
+        'src/core/action.ts',     // orchestration — calls external APIs
+        'src/git/**',             // git/GitHub I/O
+        'src/release/summary.ts', // @actions/core I/O
+      ],
     },
   },
 });

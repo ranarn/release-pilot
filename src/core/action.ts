@@ -9,13 +9,13 @@ import type { ActionConfig, BumpType, TagInfo } from './types.js'
 import * as core from '@actions/core'
 import * as semver from 'semver'
 
-import { generateChangelog } from './changelog.js'
-import { isSkipCi, parseCommits } from './commits.js'
-import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, listTags, setupGit } from './git.js'
-import { createRelease } from './github.js'
-import { determineBump, mergeRules, parseCustomRules } from './rules.js'
-import { writeSummary } from './summary.js'
-import { calculateVersion } from './version.js'
+import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, listTags, setupGit } from '../git/git.js'
+import { createRelease } from '../git/github.js'
+import { generateChangelog } from '../release/changelog.js'
+import { isSkipCi, parseCommits } from '../release/commits.js'
+import { determineBump, mergeRules, parseCustomRules } from '../release/rules.js'
+import { writeSummary } from '../release/summary.js'
+import { calculateVersion } from '../release/version.js'
 
 /**
  * Parse action inputs into a typed configuration.

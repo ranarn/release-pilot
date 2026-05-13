@@ -4,7 +4,7 @@
  * Provides functions to interact with the local git repository.
  */
 
-import type { TagInfo } from './types.js'
+import type { TagInfo } from '../core/types.js'
 
 import * as exec from '@actions/exec'
 

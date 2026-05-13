@@ -4,7 +4,7 @@
  * Creates a beautiful summary table in the Actions UI.
  */
 
-import type { ConventionalCommit, VersionResult } from './types.js'
+import type { ConventionalCommit, VersionResult } from '../core/types.js'
 
 import * as core from '@actions/core'
 

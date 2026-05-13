@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { calculateVersion, sanitizeIdentifier, stripPrefix } from '../src/version.js'
+import { calculateVersion, sanitizeIdentifier, stripPrefix } from '../../src/release/version.js'
 
 describe('calculateVersion', () => {
   it('should handle initial release with no previous tags', () => {
@@ -89,6 +89,20 @@ describe('calculateVersion', () => {
     expect(result.bump).toBe('none')
   })
 
+  it('should return previous version info when skipping release', () => {
+    const result = calculateVersion({
+      previousTag: 'v2.0.0',
+      prefix: 'v',
+      bump: 'none',
+      defaultBump: 'false',
+      initialVersion: '0.1.0',
+      prerelease: false,
+      prereleaseSuffix: '',
+    })
+    expect(result.previousTag).toBe('v2.0.0')
+    expect(result.previousVersion).toBe('2.0.0')
+  })
+
   it('should handle prerelease versions', () => {
     const result = calculateVersion({
       previousTag: 'v1.0.0',
@@ -101,6 +115,21 @@ describe('calculateVersion', () => {
     })
     expect(result.version).toBe('1.1.0-beta.0')
     expect(result.tag).toBe('v1.1.0-beta.0')
+  })
+
+  it('should create initial prerelease version when no previous tag exists', () => {
+    const result = calculateVersion({
+      previousTag: null,
+      prefix: 'v',
+      bump: 'minor',
+      defaultBump: 'patch',
+      initialVersion: '0.1.0',
+      prerelease: true,
+      prereleaseSuffix: 'beta',
+    })
+    expect(result.version).toBe('0.1.0-beta.0')
+    expect(result.tag).toBe('v0.1.0-beta.0')
+    expect(result.isInitial).toBe(true)
   })
 
   it('should work with custom prefix', () => {
@@ -129,6 +158,20 @@ describe('calculateVersion', () => {
     })
     expect(result.version).toBe('1.1.0')
     expect(result.tag).toBe('1.1.0')
+  })
+
+  it('should throw when previous tag version cannot be parsed', () => {
+    expect(() =>
+      calculateVersion({
+        previousTag: 'v-not-a-version',
+        prefix: 'v',
+        bump: 'patch',
+        defaultBump: 'patch',
+        initialVersion: '0.1.0',
+        prerelease: false,
+        prereleaseSuffix: '',
+      })
+    ).toThrow('Could not parse previous version')
   })
 })
 
