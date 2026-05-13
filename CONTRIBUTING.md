@@ -19,9 +19,9 @@ pnpm build           # Bundle for distribution (esbuild)
 4. Follow [Conventional Commits](https://www.conventionalcommits.org/) for commit messages
 5. Ensure all checks pass:
    ```bash
-   pnpm typecheck && pnpm test && pnpm build
+   pnpm typecheck && pnpm test
    ```
-6. **Run `pnpm build` and commit the updated `dist/` directory** — GitHub Actions runs from the bundled output
+6. **Push your branch** — GitHub Actions will automatically run `pnpm build` and commit the updated `dist/` directory for you.
 7. Open a PR against `main`
 
 ## Commit Message Format

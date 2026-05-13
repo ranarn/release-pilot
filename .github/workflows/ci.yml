@@ -13,6 +13,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -38,11 +40,17 @@ jobs:
       - name: 🏗️ Build
         run: pnpm build
 
-      - name: ✅ Verify dist/ is up to date
+      - name: 📦 Auto-commit dist/
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
         run: |
-          if ! git diff --ignore-cr-at-eol --ignore-all-space --exit-code dist/; then
-            echo "::warning::dist/ differs from committed version. This may be a cross-platform build difference."
-            echo "If you made source changes, run 'pnpm build' locally and commit dist/"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          if ! git diff --staged --quiet; then
+            git commit -m "build: auto-update dist/ [skip ci]"
+            git push
+          else
+            echo "dist/ is already up to date."
           fi
 
   release:
