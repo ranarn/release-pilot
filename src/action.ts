@@ -11,7 +11,7 @@ import * as semver from 'semver'
 
 import { generateChangelog } from './changelog.js'
 import { parseCommits } from './commits.js'
-import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, listTags } from './git.js'
+import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, listTags, setupGit } from './git.js'
 import { createRelease } from './github.js'
 import { determineBump, mergeRules, parseCustomRules } from './rules.js'
 import { writeSummary } from './summary.js'
@@ -207,6 +207,9 @@ export async function run(): Promise<void> {
     })
     return
   }
+
+  // Configure git identity required for annotated tag creation on GitHub Actions runners
+  await setupGit()
 
   // Create the tag
   core.info(`🏷️ Creating tag ${result.tag}...`)

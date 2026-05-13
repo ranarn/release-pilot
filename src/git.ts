@@ -86,8 +86,13 @@ export async function listTags(prefix: string): Promise<TagInfo[]> {
 }
 
 /**
- * Create a lightweight git tag.
+ * Configure local git identity required for annotated tag creation on GitHub Actions runners.
  */
+export async function setupGit(): Promise<void> {
+  await exec.exec('git', ['config', '--local', 'user.email', 'github-actions[bot]@users.noreply.github.com'])
+  await exec.exec('git', ['config', '--local', 'user.name', 'github-actions[bot]'])
+}
+
 export async function createLightweightTag(tag: string, sha: string): Promise<void> {
   await exec.exec('git', ['tag', tag, sha])
   await exec.exec('git', ['push', 'origin', tag])
