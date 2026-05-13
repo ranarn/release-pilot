@@ -122,6 +122,16 @@ function parseBodyAndFooters(lines: string[]): {
 }
 
 /**
+ * Returns true if the commit message contains a [skip ci] marker.
+ *
+ * GitHub treats [skip ci] (and variants) as a signal to skip automated processing.
+ * Release Pilot honours this by excluding such commits from bump detection and changelogs.
+ */
+export function isSkipCi(message: string): boolean {
+  return /\[skip[ _-]?ci\]/i.test(message)
+}
+
+/**
  * Parse multiple commit messages into ConventionalCommit objects.
  * Non-conventional commits are silently skipped.
  */

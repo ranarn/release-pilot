@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCommit, parseCommits } from '../src/commits.js'
+import { isSkipCi, parseCommit, parseCommits } from '../src/commits.js'
 
 describe('parseCommit', () => {
   it('should parse a simple feat commit', () => {
@@ -108,5 +108,29 @@ describe('parseCommits', () => {
       { message: 'another one', hash: 'b' },
     ]
     expect(parseCommits(commits)).toHaveLength(0)
+  })
+})
+
+describe('isSkipCi', () => {
+  it('should return true for [skip ci]', () => {
+    expect(isSkipCi('build: auto-update dist/ [skip ci]')).toBe(true)
+  })
+
+  it('should return true for [Skip CI] (case-insensitive)', () => {
+    expect(isSkipCi('chore: update deps [Skip CI]')).toBe(true)
+  })
+
+  it('should return true for [skip_ci] and [skip-ci] variants', () => {
+    expect(isSkipCi('fix: something [skip_ci]')).toBe(true)
+    expect(isSkipCi('fix: something [skip-ci]')).toBe(true)
+  })
+
+  it('should return false for normal commit messages', () => {
+    expect(isSkipCi('feat: add new feature')).toBe(false)
+    expect(isSkipCi('fix: resolve issue')).toBe(false)
+  })
+
+  it('should return false for messages that mention skip ci without brackets', () => {
+    expect(isSkipCi('chore: skip ci check')).toBe(false)
   })
 })
