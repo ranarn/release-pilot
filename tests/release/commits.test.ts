@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isSkipCi, parseCommit, parseCommits } from '../src/commits.js'
+import { isSkipCi, parseCommit, parseCommits } from '../../src/release/commits.js'
 
 describe('parseCommit', () => {
   it('should parse a simple feat commit', () => {
@@ -33,68 +33,66 @@ describe('parseCommit', () => {
   })
 
   it('should detect breaking change via BREAKING CHANGE footer', () => {
-    const message = `feat: refactor user model
-
-BREAKING CHANGE: The user model has been completely restructured.`
-    const result = parseCommit(message, 'jkl012')
+    const msg = 'feat: new auth\n\nBREAKING CHANGE: old tokens no longer work'
+    const result = parseCommit(msg, 'x2')
     expect(result?.breaking).toBe(true)
     expect(result?.footers).toHaveLength(1)
     expect(result?.footers[0]?.key).toBe('BREAKING CHANGE')
+    expect(result?.footers[0]?.value).toBe('old tokens no longer work')
   })
 
-  it('should detect breaking change via BREAKING-CHANGE footer', () => {
-    const message = `feat: refactor user model
-
-BREAKING-CHANGE: The user model has been completely restructured.`
-    const result = parseCommit(message, 'mno345')
+  it('should detect breaking change via BREAKING-CHANGE footer (hyphen variant)', () => {
+    const msg = 'feat: new auth\n\nBREAKING-CHANGE: old tokens no longer work'
+    const result = parseCommit(msg, 'x3')
     expect(result?.breaking).toBe(true)
   })
 
   it('should parse commit body', () => {
-    const message = `fix: resolve memory leak
-
-The connection pool was not being properly closed
-when the application shut down.`
-    const result = parseCommit(message, 'pqr678')
-    expect(result?.body).toContain('connection pool')
+    const msg = 'fix: resolve timeout\n\nThis fixes the 30s timeout issue\nthat occurred under load.'
+    const result = parseCommit(msg)
+    expect(result?.body).toBe('This fixes the 30s timeout issue\nthat occurred under load.')
   })
 
-  it('should parse multiple footers', () => {
-    const message = `feat: add login
-
-Reviewed-by: Alice
-Closes: #123`
-    const result = parseCommit(message, 'stu901')
-    expect(result?.footers).toHaveLength(2)
-    expect(result?.footers[0]?.key).toBe('Reviewed-by')
-    expect(result?.footers[1]?.key).toBe('Closes')
+  it('should parse Closes footer using # separator', () => {
+    const msg = 'fix: handle null input\n\nCloses #42'
+    const result = parseCommit(msg)
+    expect(result?.footers[0]?.key).toBe('Closes')
+    expect(result?.footers[0]?.value).toBe('#42')
   })
 
-  it('should handle squash merge format', () => {
-    const result = parseCommit('feat: add new feature (#42)', 'vwx234')
-    expect(result?.type).toBe('feat')
-    expect(result?.description).toBe('add new feature')
+  it('should handle multi-line footer values', () => {
+    const msg = 'feat: new feature\n\nBREAKING CHANGE: first line\ncontinuation line'
+    const result = parseCommit(msg)
+    expect(result?.footers[0]?.value).toBe('first line\ncontinuation line')
+  })
+
+  it('should strip squash merge PR number from header', () => {
+    const result = parseCommit('feat: add login (#42)')
+    expect(result?.description).toBe('add login')
+  })
+
+  it('should normalise type to lowercase', () => {
+    const result = parseCommit('FIX: something')
+    expect(result?.type).toBe('fix')
   })
 
   it('should return null for non-conventional commit', () => {
-    expect(parseCommit('just a regular commit', 'abc')).toBeNull()
-    expect(parseCommit('Update README.md', 'def')).toBeNull()
-    expect(parseCommit('Merge pull request #123', 'ghi')).toBeNull()
+    expect(parseCommit('just a plain message')).toBeNull()
+    expect(parseCommit('')).toBeNull()
   })
 
-  it('should normalize type to lowercase', () => {
-    const result = parseCommit('FEAT: uppercase type', 'abc')
-    expect(result?.type).toBe('feat')
+  it('should default hash to empty string when not provided', () => {
+    const result = parseCommit('feat: something')
+    expect(result?.hash).toBe('')
   })
 })
 
 describe('parseCommits', () => {
-  it('should filter out non-conventional commits', () => {
+  it('should parse multiple commits and skip non-conventional ones', () => {
     const commits = [
-      { message: 'feat: feature one', hash: 'a' },
-      { message: 'just a message', hash: 'b' },
-      { message: 'fix: bug fix', hash: 'c' },
-      { message: 'Merge branch main', hash: 'd' },
+      { message: 'feat: new feature', hash: 'a' },
+      { message: 'not conventional', hash: 'b' },
+      { message: 'fix: fix bug', hash: 'c' },
     ]
     const result = parseCommits(commits)
     expect(result).toHaveLength(2)

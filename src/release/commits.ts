@@ -13,7 +13,7 @@
  * - Squash merge PR title parsing
  */
 
-import type { ConventionalCommit, Footer } from './types.js'
+import type { ConventionalCommit, Footer } from '../core/types.js'
 
 /**
  * Regex to parse the conventional commit header.

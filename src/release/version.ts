@@ -4,7 +4,7 @@
  * Handles version bumping, prerelease management, and initial version logic.
  */
 
-import type { BumpType, VersionResult } from './types.js'
+import type { BumpType, VersionResult } from '../core/types.js'
 
 import * as semver from 'semver'
 

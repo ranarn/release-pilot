@@ -1,8 +1,8 @@
-import type { ConventionalCommit } from '../src/types.js'
+import type { ConventionalCommit } from '../../src/core/types.js'
 
 import { describe, expect, it } from 'vitest'
 
-import { determineBump, mergeRules, parseCustomRules } from '../src/rules.js'
+import { DEFAULT_RULES, determineBump, mergeRules, parseCustomRules } from '../../src/release/rules.js'
 
 function makeCommit(overrides: Partial<ConventionalCommit> = {}): ConventionalCommit {
   return {
@@ -59,6 +59,11 @@ describe('determineBump', () => {
     const commits = [makeCommit({ type: 'perf' })]
     expect(determineBump(commits, rules)).toBe('patch')
   })
+
+  it('should return none for unknown commit type not in rules', () => {
+    const commits = [makeCommit({ type: 'unknown' })]
+    expect(determineBump(commits, rules)).toBe('none')
+  })
 })
 
 describe('parseCustomRules', () => {
@@ -86,9 +91,18 @@ describe('parseCustomRules', () => {
     expect(() => parseCustomRules('test:invalid')).toThrow('Invalid bump type')
   })
 
+  it('should throw on malformed rule missing bump', () => {
+    expect(() => parseCustomRules('hotfix')).toThrow('Invalid custom rule')
+  })
+
   it('should return empty array for empty input', () => {
     expect(parseCustomRules('')).toHaveLength(0)
     expect(parseCustomRules('  ')).toHaveLength(0)
+  })
+
+  it('should lowercase the type', () => {
+    const rules = parseCustomRules('HotFix:patch:Fixes')
+    expect(rules[0]?.type).toBe('hotfix')
   })
 })
 
@@ -106,5 +120,19 @@ describe('mergeRules', () => {
     const merged = mergeRules(custom)
     const hotfixRule = merged.find(r => r.type === 'hotfix')
     expect(hotfixRule).toBeDefined()
+  })
+
+  it('should return all defaults when no custom rules provided', () => {
+    const merged = mergeRules([])
+    expect(merged).toHaveLength(DEFAULT_RULES.length)
+    expect(merged.find(r => r.type === 'feat')?.bump).toBe('minor')
+    expect(merged.find(r => r.type === 'fix')?.bump).toBe('patch')
+  })
+
+  it('should preserve default rules not overridden', () => {
+    const custom = parseCustomRules('feat:major:Big Features')
+    const merged = mergeRules(custom)
+    // fix should still have its default
+    expect(merged.find(r => r.type === 'fix')?.bump).toBe('patch')
   })
 })

@@ -4,7 +4,7 @@
  * Follows the Conventional Commits specification and common extensions.
  */
 
-import type { BumpType, ConventionalCommit, ReleaseRule } from './types.js'
+import type { BumpType, ConventionalCommit, ReleaseRule } from '../core/types.js'
 
 /** Default release rules following conventional commit best practices. */
 export const DEFAULT_RULES: ReleaseRule[] = [
