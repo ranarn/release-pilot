@@ -74,6 +74,22 @@ That's it. **Zero config.** Release Pilot will:
     release-title: 'Release {{tag}}'
 ```
 
+### Draft Release (Review Before Publishing)
+
+Create releases as drafts so you can review, edit, or batch multiple releases before they go public:
+
+```yaml
+- name: ✈️ Release Pilot
+  uses: ranarn/release-pilot@v1
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    create-release: true
+    release-draft: true
+    release-title: 'Release {{tag}}'
+```
+
+> Drafts are invisible to users until you publish them. Go to **Releases → Edit draft → Publish release** when you're ready. The Conventional Commits changelog is already written for you.
+
 ### Tag + Use Version Downstream
 
 ```yaml
@@ -100,6 +116,8 @@ That's it. **Zero config.** Release Pilot will:
     prerelease: true
     prerelease-suffix: beta   # omit to use the branch name as identifier
 ```
+
+> When `prerelease-suffix` is omitted, the branch name is sanitised and used as the identifier. For example, a branch named `feature/my-api` produces `1.2.0-my-api.1`, `1.2.0-my-api.2`, etc.
 
 ### Dry Run (CI Validation)
 
@@ -262,6 +280,10 @@ Each pattern in `branches` is wrapped as `^pattern$` before matching. Use `relea
 ### Floating tags use force-push
 
 `major-tag` and `minor-tag` are force-updated on each release. This is intentional — it is the standard GitHub Actions versioning pattern (`actions/checkout@v4` does the same thing).
+
+## Changelog
+
+See [Releases](https://github.com/ranarn/release-pilot/releases) for the full version history and changelogs.
 
 ## License
 
