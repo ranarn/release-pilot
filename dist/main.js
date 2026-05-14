@@ -22685,6 +22685,9 @@ var ExitCode;
   ExitCode2[ExitCode2["Success"] = 0] = "Success";
   ExitCode2[ExitCode2["Failure"] = 1] = "Failure";
 })(ExitCode || (ExitCode = {}));
+function setSecret(secret) {
+  issueCommand("add-mask", {}, secret);
+}
 function getInput(name, options) {
   const val = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || "";
   if (options && options.required && !val) {
@@ -22766,6 +22769,7 @@ async function listTags(prefix) {
     }
   });
   if (exitCode !== 0) {
+    warning("git tag --list exited with a non-zero exit code; treating tag list as empty.");
     return [];
   }
   const tags = [];
@@ -22796,6 +22800,19 @@ async function createAnnotatedTag(tag, sha, message) {
 async function forceUpdateTag(tag, sha) {
   await exec("git", ["tag", "-f", tag, sha]);
   await exec("git", ["push", "origin", tag, "--force"]);
+}
+async function isShallowClone() {
+  let output = "";
+  await exec("git", ["rev-parse", "--is-shallow-repository"], {
+    silent: true,
+    ignoreReturnCode: true,
+    listeners: {
+      stdout: (data) => {
+        output += data.toString();
+      }
+    }
+  });
+  return output.trim() === "true";
 }
 function getBranchFromRef(ref) {
   return ref.replace("refs/heads/", "");
@@ -26671,25 +26688,45 @@ function parseBodyAndFooters(lines) {
   const bodyLines = [];
   const footers = [];
   let inFooters = false;
+  let hasBodyContent = false;
+  let lastLineWasBlank = false;
   const startIdx = lines[0]?.trim() === "" ? 1 : 0;
   for (const line of lines.slice(startIdx)) {
     const trimmed = line.trim();
-    const footerMatch = trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX);
-    if (footerMatch) {
-      const key = footerMatch[1];
-      const rawValue = footerMatch[2];
-      if (key === void 0 || rawValue === void 0) continue;
-      inFooters = true;
-      footers.push({ key, value: rawValue.trim() });
-    } else if (inFooters && trimmed !== "") {
-      const lastFooter = footers.at(-1);
-      if (lastFooter) {
-        lastFooter.value += `
+    if (inFooters) {
+      if (trimmed !== "") {
+        const footerMatch = trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX);
+        if (footerMatch) {
+          const key = footerMatch[1];
+          const rawValue = footerMatch[2];
+          if (key !== void 0 && rawValue !== void 0) {
+            footers.push({ key, value: rawValue.trim() });
+          }
+        } else {
+          const lastFooter = footers.at(-1);
+          if (lastFooter) {
+            lastFooter.value += `
 ${trimmed}`;
+          }
+        }
       }
-    } else if (!inFooters) {
-      bodyLines.push(line);
+    } else {
+      const eligibleForFooter = !hasBodyContent || lastLineWasBlank;
+      const footerMatch = eligibleForFooter && trimmed !== "" ? trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX) : null;
+      if (footerMatch) {
+        const key = footerMatch[1];
+        const rawValue = footerMatch[2];
+        if (key !== void 0 && rawValue !== void 0) {
+          inFooters = true;
+          while (bodyLines.at(-1)?.trim() === "") bodyLines.pop();
+          footers.push({ key, value: rawValue.trim() });
+        }
+      } else {
+        bodyLines.push(line);
+        if (trimmed !== "") hasBodyContent = true;
+      }
     }
+    lastLineWasBlank = trimmed === "";
   }
   const body = bodyLines.join("\n").trim() || null;
   return { body, footers };
@@ -26842,7 +26879,7 @@ function calculateVersion(options) {
   const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease, prereleaseSuffix } = options;
   let effectiveBump;
   if (bump === "none") {
-    if (defaultBump === "false") {
+    if (defaultBump === "false" || defaultBump === "none") {
       return {
         version: "",
         tag: "",
@@ -26920,7 +26957,8 @@ function stripPrefix(tag, prefix) {
   return tag;
 }
 function sanitizeIdentifier(input) {
-  return input.replace(/[^a-zA-Z0-9-]/g, "-").replace(/-+/g, "-");
+  const sanitized = input.replace(/[^a-zA-Z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+  return sanitized || "release";
 }
 
 // src/core/action.ts
@@ -26948,6 +26986,11 @@ function getConfig() {
 }
 async function run() {
   const config = getConfig();
+  setSecret(config.token);
+  if (!semver2.valid(config.initialVersion)) {
+    setFailed(`Invalid initial-version value: "${config.initialVersion}". Must be a valid semver string (e.g. "0.1.0").`);
+    return;
+  }
   const validDefaultBumps = ["patch", "minor", "major", "none", "false"];
   if (!validDefaultBumps.includes(config.defaultBump)) {
     setFailed(`Invalid default-bump value: "${config.defaultBump}". Must be one of: ${validDefaultBumps.join(", ")}`);
@@ -26961,6 +27004,10 @@ async function run() {
   const commitRef = config.commitSha || GITHUB_SHA;
   if (!commitRef) {
     setFailed("Missing commit SHA. Set commit-sha input or ensure GITHUB_SHA is available.");
+    return;
+  }
+  if (config.commitSha && !/^[0-9a-f]{40}$/i.test(config.commitSha)) {
+    setFailed(`Invalid commit-sha value: "${config.commitSha}". Must be a full 40-character hex SHA.`);
     return;
   }
   const currentBranch = getBranchFromRef(GITHUB_REF);
@@ -26982,6 +27029,10 @@ async function run() {
     info(`Branch "${currentBranch}" does not match release branches [${config.branches.join(", ")}]. Skipping.`);
     setOutput("released", "false");
     setOutput("bump", "none");
+    return;
+  }
+  if (await isShallowClone()) {
+    setFailed("Shallow clone detected. Release Pilot requires full git history to find tags. Add `fetch-depth: 0` to your actions/checkout step.");
     return;
   }
   info("\u{1F4E1} Fetching tags...");
@@ -27033,7 +27084,7 @@ async function run() {
     setOutput("released", "false");
     if (result.previousTag) {
       setOutput("previous-tag", result.previousTag);
-      setOutput("previous-version", result.previousVersion);
+      setOutput("previous-version", result.previousVersion ?? "");
     }
     return;
   }
@@ -27043,7 +27094,7 @@ async function run() {
   setOutput("tag", result.tag);
   if (result.previousTag) {
     setOutput("previous-tag", result.previousTag);
-    setOutput("previous-version", result.previousVersion);
+    setOutput("previous-version", result.previousVersion ?? "");
   }
   const repositoryUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`;
   const changelog = generateChangelog(commits, rules, {
