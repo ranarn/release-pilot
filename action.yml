@@ -111,7 +111,7 @@ outputs:
   release-url:
     description: 'URL to the GitHub Release (if created).'
   released:
-    description: 'Whether a new version was actually released ("true" or "false").'
+    description: 'Whether a new version tag was created ("true" or "false"). Does not indicate whether a GitHub Release was made — check release-url for that.'
 
 runs:
   using: 'node24'

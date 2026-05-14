@@ -191,7 +191,7 @@ just like `actions/checkout@v6` does:
 | `bump` | Bump type applied | `minor` |
 | `changelog` | Generated changelog (markdown) | See below |
 | `release-url` | URL to GitHub Release | `https://...` |
-| `released` | Whether a release was made | `true` |
+| `released` | Whether a new version tag was created. `true` regardless of whether a GitHub Release was made — check `release-url` for that. | `true` |
 
 ## Conventional Commits
 
