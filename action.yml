@@ -1,5 +1,5 @@
-name: 'Release Pilot'
-description: 'The definitive GitHub Action for semantic versioning, tagging, changelog generation, and releases — powered by Conventional Commits.'
+name: 'Release Pilot Action'
+description: 'Semantic versioning, tagging, changelog generation, and GitHub Releases — powered by Conventional Commits.'
 author: 'Jonas Ranerfors'
 
 branding:
