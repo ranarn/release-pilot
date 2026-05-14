@@ -1,2 +1,6 @@
 allowBuilds:
   esbuild: true
+
+# pnpm v11 supply-chain hardening (these are defaults, made explicit for visibility)
+strictDepBuilds: true      # error if unlisted package tries to run a build script
+minimumReleaseAge: 1440    # ignore packages published less than 24h ago
