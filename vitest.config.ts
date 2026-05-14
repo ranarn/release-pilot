@@ -10,6 +10,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: [
         'src/main.ts',            // entry point only
+        'src/core/types.ts',      // types only
         'src/core/action.ts',     // orchestration — calls external APIs
         'src/git/**',             // git/GitHub I/O
         'src/release/summary.ts', // @actions/core I/O
