@@ -25,7 +25,7 @@ export function calculateVersion(options: {
   // Determine the effective bump
   let effectiveBump: BumpType
   if (bump === 'none') {
-    if (defaultBump === 'false') {
+    if (defaultBump === 'false' || defaultBump === 'none') {
       // No bump detected and default is disabled — no release
       return {
         version: '',
@@ -130,5 +130,9 @@ export function stripPrefix(tag: string, prefix: string): string {
  * Only alphanumeric characters and hyphens are allowed.
  */
 export function sanitizeIdentifier(input: string): string {
-  return input.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-')
+  const sanitized = input
+    .replace(/[^a-zA-Z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return sanitized || 'release'
 }

@@ -66,6 +66,22 @@ describe('parseCommit', () => {
     expect(result?.footers[0]?.value).toBe('first line\ncontinuation line')
   })
 
+  it('should not parse footer-like lines in body without blank-line separator', () => {
+    const msg = 'feat: new feature\n\nThis body mentions Closes #42 inline\nand Reviewed-by: someone as prose.\nNo blank line before these lines.'
+    const result = parseCommit(msg)
+    expect(result?.footers).toHaveLength(0)
+    expect(result?.body).toContain('Closes #42')
+  })
+
+  it('should parse footer after blank line when body is present', () => {
+    const msg = 'fix: resolve issue\n\nThis fixes a real problem.\n\nCloses #99'
+    const result = parseCommit(msg)
+    expect(result?.footers).toHaveLength(1)
+    expect(result?.footers[0]?.key).toBe('Closes')
+    expect(result?.footers[0]?.value).toBe('#99')
+    expect(result?.body).toBe('This fixes a real problem.')
+  })
+
   it('should strip squash merge PR number from header', () => {
     const result = parseCommit('feat: add login (#42)')
     expect(result?.description).toBe('add login')

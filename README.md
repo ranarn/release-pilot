@@ -44,7 +44,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -98,8 +98,7 @@ That's it. **Zero config.** Release Pilot will:
   with:
     token: ${{ secrets.GITHUB_TOKEN }}
     prerelease: true
-    prerelease-suffix: beta
-    branches: '.*'  # Allow all branches
+    prerelease-suffix: beta   # omit to use the branch name as identifier
 ```
 
 ### Dry Run (CI Validation)
@@ -125,7 +124,7 @@ That's it. **Zero config.** Release Pilot will:
 ### Floating Major/Minor Tags (GitHub Action Style)
 
 Automatically maintain `v2` → latest `v2.x.x` and `v2.3` → latest `v2.3.x` tags,
-just like `actions/checkout@v4` does:
+just like `actions/checkout@v6` does:
 
 ```yaml
 - name: ✈️ Release Pilot
@@ -147,16 +146,16 @@ just like `actions/checkout@v4` does:
 |-------|-------------|---------|
 | `token` | GitHub token for authentication | `${{ github.token }}` |
 | `prefix` | Tag prefix | `v` |
-| `default-bump` | Bump when no conventional type found (`patch`, `minor`, `major`, `false`) | `patch` |
-| `initial-version` | Starting version when no tags exist | `0.1.0` |
+| `default-bump` | Bump when no conventional type found. One of `patch`, `minor`, `major`, `none`, `false`. Both `none` and `false` skip the release when nothing is detected. | `patch` |
+| `initial-version` | Starting version when no tags exist. Must be valid semver. | `0.1.0` |
 | `prerelease` | Enable prerelease mode | `false` |
 | `prerelease-suffix` | Prerelease identifier (e.g., `beta`) | Branch name |
-| `branches` | Comma-separated release branch patterns (regex) | `main,master` |
+| `branches` | Comma-separated release branch patterns (regex, anchored to full name). Ignored when `prerelease` is `true`. | `main,master` |
 | `create-release` | Create a GitHub Release | `false` |
 | `release-draft` | Create release as draft | `false` |
 | `release-title` | Release title template (`{{version}}`, `{{tag}}`) | `{{tag}}` |
 | `annotated` | Create annotated tags | `true` |
-| `commit-sha` | Override the commit SHA | `GITHUB_SHA` |
+| `commit-sha` | Override the commit SHA. Must be a full 40-character hex SHA. | `GITHUB_SHA` |
 | `dry-run` | Calculate without creating anything | `false` |
 | `custom-rules` | Custom commit type rules | `''` |
 | `include-body-in-changelog` | Include commit body in changelog | `false` |
@@ -246,9 +245,23 @@ graph TD
 
 ## Requirements
 
-- **Checkout with full history:** Always use `fetch-depth: 0` in your checkout step.
+- **Checkout with full history:** Always use `fetch-depth: 0` in your checkout step. A shallow clone will cause the action to fail immediately with a clear error message.
 - **Write permissions:** The token needs `contents: write` permission.
 - **Node.js 24:** This action runs on Node.js 24 (handled automatically by GitHub Actions).
+
+## Notes
+
+### `[skip ci]` commits are excluded
+
+Commits containing `[skip ci]` (case-insensitive; also `[skip-ci]` and `[skip_ci]`) are excluded from bump detection and the changelog. Release Pilot's own auto-commits (e.g. `build: auto-update dist/ [skip ci]`) use this convention to avoid triggering new releases.
+
+### Branch patterns are fully anchored regex
+
+Each pattern in `branches` is wrapped as `^pattern$` before matching. Use `release/.*` to match all branches starting with `release/`. Invalid regex patterns fall back to exact string comparison.
+
+### Floating tags use force-push
+
+`major-tag` and `minor-tag` are force-updated on each release. This is intentional — it is the standard GitHub Actions versioning pattern (`actions/checkout@v4` does the same thing).
 
 ## License
 
