@@ -1,0 +1,37 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea? Describe it below. Check [existing issues](https://github.com/ranarn/release-pilot/issues) first to avoid duplicates.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the use case or pain point this feature addresses.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like Release Pilot to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought about?
+
+  - type: textarea
+    id: example
+    attributes:
+      label: Example workflow
+      description: If applicable, show what the new input/output/behavior would look like.
+      render: yaml
