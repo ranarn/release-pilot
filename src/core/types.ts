@@ -45,12 +45,6 @@ export interface ReleaseRule {
   section: string
 }
 
-/** Changelog section grouping commits by type. */
-export interface ChangelogSection {
-  title: string
-  commits: ConventionalCommit[]
-}
-
 /** The result of the version calculation. */
 export interface VersionResult {
   /** The new version string (without prefix). */
