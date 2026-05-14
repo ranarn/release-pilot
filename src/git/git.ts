@@ -6,6 +6,7 @@
 
 import type { TagInfo } from '../core/types.js'
 
+import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 
 /**
@@ -62,6 +63,7 @@ export async function listTags(prefix: string): Promise<TagInfo[]> {
   })
 
   if (exitCode !== 0) {
+    core.warning('git tag --list exited with a non-zero exit code; treating tag list as empty.')
     return []
   }
 
@@ -117,6 +119,24 @@ export async function forceUpdateTag(tag: string, sha: string): Promise<void> {
   await exec.exec('git', ['tag', '-f', tag, sha])
   // Force-push to remote (creates if new, moves if existing)
   await exec.exec('git', ['push', 'origin', tag, '--force'])
+}
+
+/**
+ * Return true when the repository was cloned with --depth (shallow clone).
+ * A shallow clone is missing tag history and will produce incorrect version results.
+ */
+export async function isShallowClone(): Promise<boolean> {
+  let output = ''
+  await exec.exec('git', ['rev-parse', '--is-shallow-repository'], {
+    silent: true,
+    ignoreReturnCode: true,
+    listeners: {
+      stdout: data => {
+        output += data.toString()
+      },
+    },
+  })
+  return output.trim() === 'true'
 }
 
 /**

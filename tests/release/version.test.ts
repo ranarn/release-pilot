@@ -89,6 +89,20 @@ describe('calculateVersion', () => {
     expect(result.bump).toBe('none')
   })
 
+  it('should skip release when default bump is none and no bump detected', () => {
+    const result = calculateVersion({
+      previousTag: 'v1.0.0',
+      prefix: 'v',
+      bump: 'none',
+      defaultBump: 'none',
+      initialVersion: '0.1.0',
+      prerelease: false,
+      prereleaseSuffix: '',
+    })
+    expect(result.version).toBe('')
+    expect(result.bump).toBe('none')
+  })
+
   it('should return previous version info when skipping release', () => {
     const result = calculateVersion({
       previousTag: 'v2.0.0',
@@ -276,5 +290,18 @@ describe('sanitizeIdentifier', () => {
 
   it('should keep alphanumeric and hyphens', () => {
     expect(sanitizeIdentifier('beta-1')).toBe('beta-1')
+  })
+
+  it('should strip leading hyphens', () => {
+    expect(sanitizeIdentifier('/feature')).toBe('feature')
+  })
+
+  it('should strip trailing hyphens', () => {
+    expect(sanitizeIdentifier('feature/')).toBe('feature')
+  })
+
+  it('should fall back to release for all-special-char input', () => {
+    expect(sanitizeIdentifier('///')).toBe('release')
+    expect(sanitizeIdentifier('---')).toBe('release')
   })
 })

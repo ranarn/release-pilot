@@ -8,8 +8,8 @@ branding:
 
 inputs:
   token:
-    description: 'GitHub token for authentication. Required for tagging and creating releases.'
-    required: true
+    description: 'GitHub token for authentication. Required for tagging and creating releases. The token is masked in logs.'
+    required: false
     default: ${{ github.token }}
 
   prefix:
@@ -18,27 +18,27 @@ inputs:
     default: 'v'
 
   default-bump:
-    description: 'Bump type when no conventional commit type is found. Set to "false" to skip tagging when no bump is detected.'
+    description: 'Bump type when no conventional commit type is found. One of: "patch", "minor", "major", "none", "false". Both "none" and "false" skip the release when no bump is detected.'
     required: false
     default: 'patch'
 
   initial-version:
-    description: 'The version to use when no previous tags exist.'
+    description: 'The version to use when no previous tags exist. Must be a valid semver string (e.g. "0.1.0").'
     required: false
     default: '0.1.0'
 
   prerelease:
-    description: 'Create a prerelease version. When true, versions are suffixed with the prerelease identifier.'
+    description: 'Create a prerelease version. When true, versions are suffixed with the prerelease identifier. Prerelease builds bypass the branches filter and always run.'
     required: false
     default: 'false'
 
   prerelease-suffix:
-    description: 'Identifier appended to prerelease versions (e.g., "beta" → 1.2.3-beta.0). Defaults to the sanitized branch name.'
+    description: 'Identifier appended to prerelease versions (e.g., "beta" → 1.2.3-beta.0). Defaults to the sanitized branch name if not set.'
     required: false
     default: ''
 
   branches:
-    description: 'Comma-separated list of branch patterns (regex) that trigger releases. Non-matching branches are skipped.'
+    description: 'Comma-separated list of branch patterns (regex, anchored to full name) that trigger releases. Non-matching branches are skipped. Ignored when prerelease is true.'
     required: false
     default: 'main,master'
 
@@ -48,7 +48,7 @@ inputs:
     default: 'false'
 
   release-draft:
-    description: 'Create the GitHub Release as a draft.'
+    description: 'Create the GitHub Release as a draft. Only takes effect when create-release is true.'
     required: false
     default: 'false'
 
@@ -63,7 +63,7 @@ inputs:
     default: 'true'
 
   commit-sha:
-    description: 'Override the commit SHA to tag. Defaults to GITHUB_SHA.'
+    description: 'Override the commit SHA to tag. Must be a full 40-character hex SHA. Defaults to GITHUB_SHA.'
     required: false
     default: ''
 
@@ -86,12 +86,12 @@ inputs:
     default: 'false'
 
   major-tag:
-    description: 'Create/update a floating major version tag (e.g., v2 always points to the latest v2.x.x). Perfect for GitHub Actions.'
+    description: 'Create/update a floating major version tag (e.g., v2 always points to the latest v2.x.x). Perfect for GitHub Actions. Skipped for prerelease versions.'
     required: false
     default: 'false'
 
   minor-tag:
-    description: 'Create/update a floating minor version tag (e.g., v2.3 always points to the latest v2.3.x).'
+    description: 'Create/update a floating minor version tag (e.g., v2.3 always points to the latest v2.3.x). Skipped for prerelease versions.'
     required: false
     default: 'false'
 

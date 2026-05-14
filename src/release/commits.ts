@@ -90,6 +90,8 @@ function parseBodyAndFooters(lines: string[]): {
   const bodyLines: string[] = []
   const footers: Footer[] = []
   let inFooters = false
+  let hasBodyContent = false
+  let lastLineWasBlank = false
 
   // Skip the first blank separator line
   const startIdx = lines[0]?.trim() === '' ? 1 : 0
@@ -97,24 +99,42 @@ function parseBodyAndFooters(lines: string[]): {
   for (const line of lines.slice(startIdx)) {
     const trimmed = line.trim()
 
-    // Check if this line starts a footer section
-    const footerMatch = trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX)
-
-    if (footerMatch) {
-      const key = footerMatch[1]
-      const rawValue = footerMatch[2]
-      if (key === undefined || rawValue === undefined) continue
-      inFooters = true
-      footers.push({ key, value: rawValue.trim() })
-    } else if (inFooters && trimmed !== '') {
-      // Continuation of previous footer value
-      const lastFooter = footers.at(-1)
-      if (lastFooter) {
-        lastFooter.value += `\n${trimmed}`
+    if (inFooters) {
+      if (trimmed !== '') {
+        const footerMatch = trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX)
+        if (footerMatch) {
+          const key = footerMatch[1]
+          const rawValue = footerMatch[2]
+          if (key !== undefined && rawValue !== undefined) {
+            footers.push({ key, value: rawValue.trim() })
+          }
+        } else {
+          const lastFooter = footers.at(-1)
+          if (lastFooter) {
+            lastFooter.value += `\n${trimmed}`
+          }
+        }
       }
-    } else if (!inFooters) {
-      bodyLines.push(line)
+    } else {
+      // Footers must be preceded by a blank line when body content exists (per Conventional Commits spec)
+      const eligibleForFooter = !hasBodyContent || lastLineWasBlank
+      const footerMatch = eligibleForFooter && trimmed !== '' ? (trimmed.match(FOOTER_REGEX) ?? trimmed.match(FOOTER_HASH_REGEX)) : null
+
+      if (footerMatch) {
+        const key = footerMatch[1]
+        const rawValue = footerMatch[2]
+        if (key !== undefined && rawValue !== undefined) {
+          inFooters = true
+          while (bodyLines.at(-1)?.trim() === '') bodyLines.pop()
+          footers.push({ key, value: rawValue.trim() })
+        }
+      } else {
+        bodyLines.push(line)
+        if (trimmed !== '') hasBodyContent = true
+      }
     }
+
+    lastLineWasBlank = trimmed === ''
   }
 
   const body = bodyLines.join('\n').trim() || null
