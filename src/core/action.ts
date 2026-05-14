@@ -9,7 +9,7 @@ import type { ActionConfig, BumpType, TagInfo } from './types.js'
 import * as core from '@actions/core'
 import * as semver from 'semver'
 
-import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, listTags, setupGit } from '../git/git.js'
+import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, isShallowClone, listTags, setupGit } from '../git/git.js'
 import { createRelease } from '../git/github.js'
 import { generateChangelog } from '../release/changelog.js'
 import { isSkipCi, parseCommits } from '../release/commits.js'
@@ -54,6 +54,13 @@ function getConfig(): ActionConfig {
 export async function run(): Promise<void> {
   const config = getConfig()
 
+  core.setSecret(config.token)
+
+  if (!semver.valid(config.initialVersion)) {
+    core.setFailed(`Invalid initial-version value: "${config.initialVersion}". Must be a valid semver string (e.g. "0.1.0").`)
+    return
+  }
+
   const validDefaultBumps = ['patch', 'minor', 'major', 'none', 'false'] as const
   if (!(validDefaultBumps as readonly string[]).includes(config.defaultBump)) {
     core.setFailed(`Invalid default-bump value: "${config.defaultBump}". Must be one of: ${validDefaultBumps.join(', ')}`)
@@ -69,6 +76,11 @@ export async function run(): Promise<void> {
   const commitRef = config.commitSha || GITHUB_SHA
   if (!commitRef) {
     core.setFailed('Missing commit SHA. Set commit-sha input or ensure GITHUB_SHA is available.')
+    return
+  }
+
+  if (config.commitSha && !/^[0-9a-f]{40}$/i.test(config.commitSha)) {
+    core.setFailed(`Invalid commit-sha value: "${config.commitSha}". Must be a full 40-character hex SHA.`)
     return
   }
 
@@ -95,6 +107,11 @@ export async function run(): Promise<void> {
     core.info(`Branch "${currentBranch}" does not match release branches [${config.branches.join(', ')}]. Skipping.`)
     core.setOutput('released', 'false')
     core.setOutput('bump', 'none')
+    return
+  }
+
+  if (await isShallowClone()) {
+    core.setFailed('Shallow clone detected. Release Pilot requires full git history to find tags. Add `fetch-depth: 0` to your actions/checkout step.')
     return
   }
 
@@ -166,7 +183,7 @@ export async function run(): Promise<void> {
     core.setOutput('released', 'false')
     if (result.previousTag) {
       core.setOutput('previous-tag', result.previousTag)
-      core.setOutput('previous-version', result.previousVersion)
+      core.setOutput('previous-version', result.previousVersion ?? '')
     }
     return
   }
@@ -179,7 +196,7 @@ export async function run(): Promise<void> {
 
   if (result.previousTag) {
     core.setOutput('previous-tag', result.previousTag)
-    core.setOutput('previous-version', result.previousVersion)
+    core.setOutput('previous-version', result.previousVersion ?? '')
   }
 
   // Generate changelog
