@@ -71,8 +71,7 @@ jobs:
         uses: ./
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          create-release: true
-          release-title: 'Release {{tag}}'
+          create-release: false
           major-tag: true
           minor-tag: true
           default-bump: none
