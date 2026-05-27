@@ -11,6 +11,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
@@ -35,6 +37,18 @@ jobs:
 
       - name: 🏗️ Build
         run: pnpm build
+
+      - name: 📦 Commit dist/ to PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dist/
+          if ! git diff --staged --quiet; then
+            git commit -m "build: auto-update dist/ [skip ci]"
+            git push origin HEAD:${{ github.head_ref }}
+          else
+            echo "dist/ is already up to date."
+          fi
 
       - name: 🔒 Audit dependencies
         run: pnpm audit --audit-level high
