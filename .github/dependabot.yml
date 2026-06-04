@@ -5,6 +5,17 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      actions-toolkit:
+        patterns:
+          - "@actions/*"
+      types:
+        patterns:
+          - "@types/*"
 
   - package-ecosystem: github-actions
     directory: /
