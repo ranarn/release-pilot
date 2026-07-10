@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The definitive GitHub Action for semantic versioning, tagging, changelog generation, and releases — powered by Conventional Commits.",
   "main": "dist/main.js",
-  "packageManager": "pnpm@11.5.1",
+  "packageManager": "pnpm@11.11.0",
   "engines": {
     "node": ">=24"
   },
@@ -34,15 +34,15 @@
     "@actions/core": "^3.0.1",
     "@actions/exec": "^3.0.0",
     "@actions/github": "^9.1.1",
-    "semver": "^7.8.4"
+    "semver": "^7.8.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
-    "@types/node": "^25.9.1",
+    "@biomejs/biome": "^2.5.3",
+    "@types/node": "^26.1.1",
     "@types/semver": "^7.7.1",
-    "@vitest/coverage-v8": "^4.1.8",
+    "@vitest/coverage-v8": "^4.1.10",
     "esbuild": "^0.28.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.8"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
