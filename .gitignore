@@ -14,3 +14,5 @@ CLAUDE.md
 # CI auto-builds and commits dist/ on every push to main.
 
 # Note: pnpm-lock.yaml is NOT ignored — required for reproducible CI builds.
+
+.agent/
