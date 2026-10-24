@@ -43,7 +43,11 @@ export function calculateVersion(options: {
 
   // Handle initial version (no previous tags)
   if (!previousTag) {
-    const version = initialVersion
+    // semver.valid() also accepts "v0.1.0" — use its normalized form so the prefix isn't doubled
+    const version = semver.valid(initialVersion)
+    if (!version) {
+      throw new Error(`Invalid initial version "${initialVersion}". Must be a valid semver string (e.g. "0.1.0").`)
+    }
     const tag = `${prefix}${version}`
 
     if (prerelease && prereleaseSuffix) {
