@@ -27428,6 +27428,9 @@ function generateChangelog(commits, rules, options = {}) {
     parts.push("### \u{1F4A5} Breaking Changes\n");
     for (const commit of breakingChanges) {
       parts.push(formatCommitLine(commit, repositoryUrl));
+      if (includeBody && commit.body) {
+        parts.push(formatBody(commit.body));
+      }
       const breakingFooter = commit.footers.find((f) => f.key === "BREAKING CHANGE" || f.key === "BREAKING-CHANGE");
       if (breakingFooter) {
         parts.push(`  > ${breakingFooter.value}
@@ -27444,9 +27447,7 @@ function generateChangelog(commits, rules, options = {}) {
     for (const commit of nonBreaking) {
       parts.push(formatCommitLine(commit, repositoryUrl));
       if (includeBody && commit.body) {
-        const bodyLines = commit.body.split("\n").map((line) => `  ${line}`).join("\n");
-        parts.push(`${bodyLines}
-`);
+        parts.push(formatBody(commit.body));
       }
     }
     parts.push("");
@@ -27457,6 +27458,11 @@ function formatCommitLine(commit, repositoryUrl) {
   const scope = commit.scope ? `**${commit.scope}:** ` : "";
   const hash = commit.hash ? repositoryUrl ? ` ([${commit.hash.slice(0, 7)}](${repositoryUrl}/commit/${commit.hash}))` : ` (${commit.hash.slice(0, 7)})` : "";
   return `- ${scope}${commit.description}${hash}`;
+}
+function formatBody(body) {
+  const bodyLines = body.split("\n").map((line) => `  ${line}`).join("\n");
+  return `${bodyLines}
+`;
 }
 function groupCommits(commits, sectionMap) {
   const groups = /* @__PURE__ */ new Map();
