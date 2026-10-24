@@ -51,6 +51,10 @@ export function generateChangelog(
     for (const commit of breakingChanges) {
       parts.push(formatCommitLine(commit, repositoryUrl))
 
+      if (includeBody && commit.body) {
+        parts.push(formatBody(commit.body))
+      }
+
       // Include breaking change details from footer
       const breakingFooter = commit.footers.find(f => f.key === 'BREAKING CHANGE' || f.key === 'BREAKING-CHANGE')
       if (breakingFooter) {
@@ -71,12 +75,7 @@ export function generateChangelog(
       parts.push(formatCommitLine(commit, repositoryUrl))
 
       if (includeBody && commit.body) {
-        // Indent body text
-        const bodyLines = commit.body
-          .split('\n')
-          .map(line => `  ${line}`)
-          .join('\n')
-        parts.push(`${bodyLines}\n`)
+        parts.push(formatBody(commit.body))
       }
     }
     parts.push('')
@@ -93,6 +92,17 @@ function formatCommitLine(commit: ConventionalCommit, repositoryUrl?: string): s
   const hash = commit.hash ? (repositoryUrl ? ` ([${commit.hash.slice(0, 7)}](${repositoryUrl}/commit/${commit.hash}))` : ` (${commit.hash.slice(0, 7)})`) : ''
 
   return `- ${scope}${commit.description}${hash}`
+}
+
+/**
+ * Indent a commit body so it renders under its list item.
+ */
+function formatBody(body: string): string {
+  const bodyLines = body
+    .split('\n')
+    .map(line => `  ${line}`)
+    .join('\n')
+  return `${bodyLines}\n`
 }
 
 /**

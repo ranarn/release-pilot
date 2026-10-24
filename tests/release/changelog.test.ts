@@ -120,6 +120,27 @@ describe('generateChangelog', () => {
     expect(changelog).not.toContain('Detailed body text.')
   })
 
+  it('should include body for breaking changes when enabled, between the entry and the footer quote', () => {
+    const commits = [
+      makeCommit({
+        type: 'feat',
+        breaking: true,
+        description: 'new auth flow',
+        hash: 'aaa1111',
+        body: 'Tokens are now issued per session.',
+        footers: [{ key: 'BREAKING CHANGE', value: 'Old tokens are rejected.' }],
+      }),
+    ]
+    const changelog = generateChangelog(commits, DEFAULT_RULES, { includeBody: true })
+    expect(changelog).toBe('### 💥 Breaking Changes\n\n- new auth flow (aaa1111)\n  Tokens are now issued per session.\n\n  > Old tokens are rejected.')
+  })
+
+  it('should not include body for breaking changes when disabled', () => {
+    const commits = [makeCommit({ type: 'feat', breaking: true, description: 'new auth flow', body: 'Tokens are now issued per session.' })]
+    const changelog = generateChangelog(commits, DEFAULT_RULES, { includeBody: false })
+    expect(changelog).not.toContain('Tokens are now issued per session.')
+  })
+
   it('should order sections by rule definition order', () => {
     const commits = [makeCommit({ type: 'fix', description: 'fix bug' }), makeCommit({ type: 'feat', description: 'new feature' })]
     const changelog = generateChangelog(commits, DEFAULT_RULES)
