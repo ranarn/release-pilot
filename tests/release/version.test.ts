@@ -207,6 +207,47 @@ describe('calculateVersion', () => {
     expect(result.version).toBe('1.0.0')
     expect(result.tag).toBe('v1.0.0')
   })
+
+  it('should normalize initial version v0.1.0 instead of doubling the prefix', () => {
+    const result = calculateVersion({
+      previousTag: null,
+      prefix: 'v',
+      bump: 'minor',
+      defaultBump: 'patch',
+      initialVersion: 'v0.1.0',
+      prerelease: false,
+      prereleaseSuffix: '',
+    })
+    expect(result.version).toBe('0.1.0')
+    expect(result.tag).toBe('v0.1.0')
+  })
+
+  it('should normalize initial version for a prerelease', () => {
+    const result = calculateVersion({
+      previousTag: null,
+      prefix: 'v',
+      bump: 'minor',
+      defaultBump: 'patch',
+      initialVersion: 'v0.1.0',
+      prerelease: true,
+      prereleaseSuffix: 'beta',
+    })
+    expect(result.tag).toBe('v0.1.0-beta.0')
+  })
+
+  it('should throw on an invalid initial version', () => {
+    expect(() =>
+      calculateVersion({
+        previousTag: null,
+        prefix: 'v',
+        bump: 'minor',
+        defaultBump: 'patch',
+        initialVersion: 'not-a-version',
+        prerelease: false,
+        prereleaseSuffix: '',
+      })
+    ).toThrow('Invalid initial version')
+  })
 })
 
 describe('calculateVersion — prerelease increments', () => {
