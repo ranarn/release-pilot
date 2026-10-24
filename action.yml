@@ -8,7 +8,7 @@ branding:
 
 inputs:
   token:
-    description: 'GitHub token for authentication. Required for tagging and creating releases. The token is masked in logs.'
+    description: 'GitHub token used to create the GitHub Release. Tags are pushed with the git credentials persisted by actions/checkout, not with this token. The token is masked in logs.'
     required: false
     default: ${{ github.token }}
 
@@ -18,7 +18,7 @@ inputs:
     default: 'v'
 
   default-bump:
-    description: 'Bump type when no conventional commit type is found. One of: "patch", "minor", "major", "none", "false". Both "none" and "false" skip the release when no bump is detected.'
+    description: 'Bump type applied when no commit maps to a bump, including pushes with only docs/chore/ci commits or non-conventional commits. One of: "patch", "minor", "major", "none", "false". Both "none" and "false" skip the release in that case.'
     required: false
     default: 'patch'
 
@@ -28,7 +28,7 @@ inputs:
     default: '0.1.0'
 
   prerelease:
-    description: 'Create a prerelease version. When true, versions are suffixed with the prerelease identifier. Prerelease builds bypass the branches filter and always run.'
+    description: 'Create a prerelease version. When true, versions are suffixed with the prerelease identifier. Prerelease builds bypass the branches filter; pull request runs are still skipped.'
     required: false
     default: 'false'
 
@@ -97,17 +97,17 @@ inputs:
 
 outputs:
   version:
-    description: 'The new version number without prefix (e.g., "1.2.3").'
+    description: 'The new version number without prefix (e.g., "1.2.3"). Empty when no version was calculated.'
   tag:
-    description: 'The new tag with prefix (e.g., "v1.2.3").'
+    description: 'The new tag with prefix (e.g., "v1.2.3"). Empty when no version was calculated.'
   previous-version:
-    description: 'The previous version number without prefix.'
+    description: 'The previous version number without prefix. Empty when there is no previous tag, and on pull request or non-release-branch skips.'
   previous-tag:
-    description: 'The previous tag with prefix.'
+    description: 'The previous tag with prefix. Empty when there is no previous tag, and on pull request or non-release-branch skips.'
   bump:
     description: 'The bump type that was applied: "major", "minor", "patch", or "none".'
   changelog:
-    description: 'The generated changelog in markdown format.'
+    description: 'The generated changelog in markdown format. Empty when no version was calculated.'
   release-url:
     description: 'URL to the GitHub Release (if created).'
   released:
