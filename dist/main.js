@@ -19647,11 +19647,11 @@ var require_valid = __commonJS({
   "node_modules/.pnpm/semver@7.8.5/node_modules/semver/functions/valid.js"(exports, module) {
     "use strict";
     var parse5 = require_parse2();
-    var valid2 = (version, options) => {
+    var valid3 = (version, options) => {
       const v = parse5(version, options);
       return v ? v.version : null;
     };
-    module.exports = valid2;
+    module.exports = valid3;
   }
 });
 
@@ -21060,7 +21060,7 @@ var require_semver2 = __commonJS({
     var SemVer = require_semver();
     var identifiers = require_identifiers();
     var parse5 = require_parse2();
-    var valid2 = require_valid();
+    var valid3 = require_valid();
     var clean = require_clean();
     var inc2 = require_inc();
     var diff = require_diff();
@@ -21099,7 +21099,7 @@ var require_semver2 = __commonJS({
     var subset = require_subset();
     module.exports = {
       parse: parse5,
-      valid: valid2,
+      valid: valid3,
       clean,
       inc: inc2,
       diff,
@@ -27704,6 +27704,11 @@ async function writeSummary(options) {
   await summary2.write();
 }
 
+// src/release/title.ts
+function formatReleaseTitle(template, values) {
+  return template.replaceAll("{{version}}", values.version).replaceAll("{{tag}}", values.tag);
+}
+
 // src/release/version.ts
 var semver = __toESM(require_semver2(), 1);
 function calculateVersion(options) {
@@ -27725,7 +27730,10 @@ function calculateVersion(options) {
     effectiveBump = bump;
   }
   if (!previousTag) {
-    const version = initialVersion;
+    const version = semver.valid(initialVersion);
+    if (!version) {
+      throw new Error(`Invalid initial version "${initialVersion}". Must be a valid semver string (e.g. "0.1.0").`);
+    }
     const tag = `${prefix}${version}`;
     if (prerelease && prereleaseSuffix) {
       const preVersion = `${version}-${sanitizeIdentifier(prereleaseSuffix)}.0`;
@@ -27866,7 +27874,7 @@ async function run() {
     setFailed("Shallow clone detected. Release Pilot requires full git history to find tags. Add `fetch-depth: 0` to your actions/checkout step.");
     return;
   }
-  info("\u{1F4E1} Fetching tags...");
+  info("\u{1F4E1} Reading local tags...");
   const tags = await listTags(config.prefix);
   info(`Found ${tags.length} existing tag(s).`);
   const latestTag = findLatestTag(tags);
@@ -27962,7 +27970,7 @@ async function run() {
   let releaseUrl = null;
   if (config.createRelease) {
     info("\u{1F4E6} Creating GitHub Release...");
-    const title = config.releaseTitle.replace("{{version}}", result.version).replace("{{tag}}", result.tag);
+    const title = formatReleaseTitle(config.releaseTitle, { version: result.version, tag: result.tag });
     releaseUrl = await createRelease({
       token: config.token,
       tag: result.tag,
@@ -27985,10 +27993,10 @@ async function run() {
   info("\u2708\uFE0F Release Pilot complete!");
 }
 function findLatestTag(tags) {
-  const valid2 = tags.filter((t) => semver2.valid(t.version));
-  if (valid2.length === 0) return null;
-  valid2.sort((a, b) => semver2.rcompare(a.version, b.version));
-  return valid2[0] ?? null;
+  const valid3 = tags.filter((t) => semver2.valid(t.version));
+  if (valid3.length === 0) return null;
+  valid3.sort((a, b) => semver2.rcompare(a.version, b.version));
+  return valid3[0] ?? null;
 }
 async function createFloatingTags(version, prefix, sha, config) {
   const parsed = semver2.parse(version);

@@ -15,6 +15,7 @@ import { generateChangelog } from '../release/changelog.js'
 import { isSkipCi, parseCommits } from '../release/commits.js'
 import { determineBump, mergeRules, parseCustomRules } from '../release/rules.js'
 import { writeSummary } from '../release/summary.js'
+import { formatReleaseTitle } from '../release/title.js'
 import { calculateVersion } from '../release/version.js'
 
 /**
@@ -116,7 +117,7 @@ export async function run(): Promise<void> {
   }
 
   // Get existing tags
-  core.info('📡 Fetching tags...')
+  core.info('📡 Reading local tags...')
   const tags = await listTags(config.prefix)
   core.info(`Found ${tags.length} existing tag(s).`)
 
@@ -247,7 +248,7 @@ export async function run(): Promise<void> {
   let releaseUrl: string | null = null
   if (config.createRelease) {
     core.info('📦 Creating GitHub Release...')
-    const title = config.releaseTitle.replace('{{version}}', result.version).replace('{{tag}}', result.tag)
+    const title = formatReleaseTitle(config.releaseTitle, { version: result.version, tag: result.tag })
 
     releaseUrl = await createRelease({
       token: config.token,
