@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { parseCommits } from '../../src/release/commits.js'
+import { DEFAULT_RULES, determineBump } from '../../src/release/rules.js'
 import { calculateVersion, sanitizeIdentifier, stripPrefix } from '../../src/release/version.js'
 
 describe('calculateVersion', () => {
@@ -186,6 +188,24 @@ describe('calculateVersion', () => {
         prereleaseSuffix: '',
       })
     ).toThrow('Could not parse previous version')
+  })
+
+  it.each([
+    ['! marker', 'feat!: remove deprecated API'],
+    ['BREAKING CHANGE footer', 'feat: refactor authentication\n\nBREAKING CHANGE: The auth token format has changed.'],
+  ])('should release 1.0.0 for a breaking change (%s) during 0.x', (_label, message) => {
+    const bump = determineBump(parseCommits([{ message, hash: 'abc' }]), DEFAULT_RULES)
+    const result = calculateVersion({
+      previousTag: 'v0.3.0',
+      prefix: 'v',
+      bump,
+      defaultBump: 'patch',
+      initialVersion: '0.1.0',
+      prerelease: false,
+      prereleaseSuffix: '',
+    })
+    expect(result.version).toBe('1.0.0')
+    expect(result.tag).toBe('v1.0.0')
   })
 })
 

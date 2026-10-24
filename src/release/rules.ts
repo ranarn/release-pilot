@@ -77,8 +77,8 @@ export function mergeRules(customRules: ReleaseRule[]): ReleaseRule[] {
  *
  * Priority: major > minor > patch > none
  *
- * Breaking changes always result in a major bump (or minor if in 0.x.y range,
- * following SemVer conventions for initial development).
+ * Breaking changes always result in a major bump, including in the 0.x.y range
+ * (so 0.x.y → 1.0.0).
  */
 export function determineBump(commits: ConventionalCommit[], rules: ReleaseRule[]): BumpType {
   const ruleMap = new Map<string, ReleaseRule>()
