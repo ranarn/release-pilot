@@ -116,7 +116,7 @@ export async function run(): Promise<void> {
   }
 
   // Get existing tags
-  core.info('📡 Fetching tags...')
+  core.info('📡 Reading local tags...')
   const tags = await listTags(config.prefix)
   core.info(`Found ${tags.length} existing tag(s).`)
 

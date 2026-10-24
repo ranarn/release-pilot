@@ -252,11 +252,11 @@ describe('calculateVersion — prerelease increments', () => {
     expect(result.tag).toBe('v2.0.0-beta.0')
   })
 
-  it('should not escalate on any bump when already on a major prerelease', () => {
+  it.each(['patch', 'minor', 'major'] as const)('should only increment the counter on a %s bump when already on a major prerelease', bump => {
     const result = calculateVersion({
       previousTag: 'v2.0.0-beta.0',
       prefix: 'v',
-      bump: 'minor',
+      bump,
       defaultBump: 'patch',
       initialVersion: '0.1.0',
       prerelease: true,
