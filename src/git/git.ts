@@ -43,9 +43,10 @@ export async function getCommitsBetween(from: string | null, to: string): Promis
 }
 
 /**
- * List all semver-valid tags in the repository.
+ * List local tags that start with the given prefix.
  *
- * Returns tags sorted by version (newest first).
+ * Returns tags sorted by version (newest first). Tags are not validated as
+ * semver here — `findLatestTag` in core/action.ts does that.
  */
 export async function listTags(prefix: string): Promise<TagInfo[]> {
   let output = ''
