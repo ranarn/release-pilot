@@ -46,7 +46,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add dist/
           if ! git diff --staged --quiet; then
-            git commit -m "build: auto-update dist/ [skip ci]"
+            # No skip-ci marker: GITHUB_TOKEN pushes never trigger workflows, and the
+            # marker would leak into squash-merge bodies and suppress the release.
+            git commit -m "build: auto-update dist/"
             git push origin HEAD:${{ github.head_ref }}
           else
             echo "dist/ is already up to date."
