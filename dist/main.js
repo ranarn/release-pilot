@@ -27868,7 +27868,7 @@ async function run() {
     setFailed("Shallow clone detected. Release Pilot requires full git history to find tags. Add `fetch-depth: 0` to your actions/checkout step.");
     return;
   }
-  info("\u{1F4E1} Fetching tags...");
+  info("\u{1F4E1} Reading local tags...");
   const tags = await listTags(config.prefix);
   info(`Found ${tags.length} existing tag(s).`);
   const latestTag = findLatestTag(tags);
