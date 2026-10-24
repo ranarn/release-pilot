@@ -237,6 +237,8 @@ feat: refactor authentication
 BREAKING CHANGE: The auth token format has changed.
 ```
 
+This also applies below 1.0.0: a breaking change during `0.x` releases `1.0.0`.
+
 ## How It Works
 
 ```mermaid
