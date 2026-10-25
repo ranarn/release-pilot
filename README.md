@@ -287,6 +287,10 @@ Commits containing `[skip ci]` (case-insensitive; also `[skip-ci]` and `[skip_ci
 
 > **Squash merges:** GitHub's default squash commit body lists every commit in the PR. If any of them carried `[skip ci]` (e.g. a bot commit), the squashed commit inherits it: GitHub skips the workflow, and Release Pilot ignores the commit. Edit the squash message, or keep the marker out of PR commits.
 
+### Re-runs recover a missing release
+
+If a run pushed the tag but failed before creating the GitHub Release, re-running it (or the next run with no new commits) creates the missing release for the latest tag, with the changelog since the tag before it. This only happens when `create-release` is `true`; existing releases, including drafts, are left untouched.
+
 ### Branch patterns are fully anchored regex
 
 Each pattern in `branches` is wrapped as `^pattern$` before matching. Use `release/.*` to match all branches starting with `release/`. Invalid regex patterns fall back to exact string comparison.

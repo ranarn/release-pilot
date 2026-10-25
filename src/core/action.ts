@@ -10,11 +10,12 @@ import * as core from '@actions/core'
 import * as semver from 'semver'
 
 import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, isShallowClone, listTags, setupGit } from '../git/git.js'
-import { createRelease } from '../git/github.js'
+import { createRelease, releaseExists } from '../git/github.js'
 import { generateChangelog } from '../release/changelog.js'
 import { isSkipCi, parseCommits } from '../release/commits.js'
 import { determineBump, mergeRules, parseCustomRules } from '../release/rules.js'
 import { writeSummary } from '../release/summary.js'
+import { findLatestTag, findPreviousTag } from '../release/tags.js'
 import { formatReleaseTitle } from '../release/title.js'
 import { calculateVersion } from '../release/version.js'
 
@@ -143,6 +144,9 @@ export async function run(): Promise<void> {
     core.setOutput('bump', 'none')
     core.setOutput('previous-tag', latestTag.name)
     core.setOutput('previous-version', latestTag.version)
+    if (config.createRelease && !config.dryRun) {
+      await createMissingRelease(latestTag, tags, config)
+    }
     return
   }
 
@@ -277,12 +281,33 @@ export async function run(): Promise<void> {
   core.info('✈️ Release Pilot complete!')
 }
 
-function findLatestTag(tags: TagInfo[]): TagInfo | null {
-  const valid = tags.filter(t => semver.valid(t.version))
-  if (valid.length === 0) return null
+/**
+ * Create the GitHub Release for an existing tag that has none — the state left
+ * behind when an earlier run pushed the tag but failed before creating the release.
+ */
+async function createMissingRelease(latestTag: TagInfo, tags: TagInfo[], config: ActionConfig): Promise<void> {
+  if (await releaseExists({ token: config.token, tag: latestTag.name })) return
 
-  valid.sort((a, b) => semver.rcompare(a.version, b.version))
-  return valid[0] ?? null
+  core.info(`🩹 Tag ${latestTag.name} has no GitHub Release (an earlier run likely failed after tagging) — creating it now.`)
+
+  const previousTag = findPreviousTag(tags, latestTag)
+  const rawCommits = (await getCommitsBetween(previousTag?.sha ?? null, latestTag.sha)).filter(c => !isSkipCi(c.message))
+  const changelog = generateChangelog(parseCommits(rawCommits), mergeRules(config.customRules), {
+    repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`,
+    includeBody: config.includeBodyInChangelog,
+  })
+
+  const releaseUrl = await createRelease({
+    token: config.token,
+    tag: latestTag.name,
+    title: formatReleaseTitle(config.releaseTitle, { version: latestTag.version, tag: latestTag.name }),
+    body: changelog,
+    draft: config.releaseDraft,
+    prerelease: semver.prerelease(latestTag.version) !== null,
+  })
+
+  core.info(`✅ Release created: ${releaseUrl}`)
+  core.setOutput('release-url', releaseUrl)
 }
 
 /**

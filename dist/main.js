@@ -19337,13 +19337,13 @@ var require_semver = __commonJS({
     var { safeRe: re, t } = require_re();
     var parseOptions = require_parse_options();
     var { compareIdentifiers } = require_identifiers();
-    var isPrereleaseIdentifier = (prerelease, identifier) => {
+    var isPrereleaseIdentifier = (prerelease2, identifier) => {
       const identifiers = identifier.split(".");
-      if (identifiers.length > prerelease.length) {
+      if (identifiers.length > prerelease2.length) {
         return false;
       }
       for (let i = 0; i < identifiers.length; i++) {
-        if (compareIdentifiers(prerelease[i], identifiers[i]) !== 0) {
+        if (compareIdentifiers(prerelease2[i], identifiers[i]) !== 0) {
           return false;
         }
       }
@@ -19591,17 +19591,17 @@ var require_semver = __commonJS({
               }
             }
             if (identifier) {
-              let prerelease = [identifier, base];
+              let prerelease2 = [identifier, base];
               if (identifierBase === false) {
-                prerelease = [identifier];
+                prerelease2 = [identifier];
               }
               if (isPrereleaseIdentifier(this.prerelease, identifier)) {
                 const prereleaseBase = this.prerelease[identifier.split(".").length];
                 if (isNaN(prereleaseBase)) {
-                  this.prerelease = prerelease;
+                  this.prerelease = prerelease2;
                 }
               } else {
-                this.prerelease = prerelease;
+                this.prerelease = prerelease2;
               }
             }
             break;
@@ -19647,11 +19647,11 @@ var require_valid = __commonJS({
   "node_modules/.pnpm/semver@7.8.5/node_modules/semver/functions/valid.js"(exports, module) {
     "use strict";
     var parse5 = require_parse2();
-    var valid3 = (version, options) => {
+    var valid4 = (version, options) => {
       const v = parse5(version, options);
       return v ? v.version : null;
     };
-    module.exports = valid3;
+    module.exports = valid4;
   }
 });
 
@@ -19771,11 +19771,11 @@ var require_prerelease = __commonJS({
   "node_modules/.pnpm/semver@7.8.5/node_modules/semver/functions/prerelease.js"(exports, module) {
     "use strict";
     var parse5 = require_parse2();
-    var prerelease = (version, options) => {
+    var prerelease2 = (version, options) => {
       const parsed = parse5(version, options);
       return parsed && parsed.prerelease.length ? parsed.prerelease : null;
     };
-    module.exports = prerelease;
+    module.exports = prerelease2;
   }
 });
 
@@ -19858,8 +19858,8 @@ var require_lt = __commonJS({
   "node_modules/.pnpm/semver@7.8.5/node_modules/semver/functions/lt.js"(exports, module) {
     "use strict";
     var compare = require_compare();
-    var lt = (a, b, loose) => compare(a, b, loose) < 0;
-    module.exports = lt;
+    var lt2 = (a, b, loose) => compare(a, b, loose) < 0;
+    module.exports = lt2;
   }
 });
 
@@ -19911,7 +19911,7 @@ var require_cmp = __commonJS({
     var neq = require_neq();
     var gt = require_gt();
     var gte = require_gte();
-    var lt = require_lt();
+    var lt2 = require_lt();
     var lte = require_lte();
     var cmp = (a, op, b, loose) => {
       switch (op) {
@@ -19942,7 +19942,7 @@ var require_cmp = __commonJS({
         case ">=":
           return gte(a, b, loose);
         case "<":
-          return lt(a, b, loose);
+          return lt2(a, b, loose);
         case "<=":
           return lte(a, b, loose);
         default:
@@ -19991,9 +19991,9 @@ var require_coerce = __commonJS({
       const major = match[2];
       const minor = match[3] || "0";
       const patch = match[4] || "0";
-      const prerelease = options.includePrerelease && match[5] ? `-${match[5]}` : "";
+      const prerelease2 = options.includePrerelease && match[5] ? `-${match[5]}` : "";
       const build = options.includePrerelease && match[6] ? `+${match[6]}` : "";
-      return parse5(`${major}.${minor}.${patch}${prerelease}${build}`, options);
+      return parse5(`${major}.${minor}.${patch}${prerelease2}${build}`, options);
     };
     module.exports = coerce;
   }
@@ -20746,7 +20746,7 @@ var require_outside = __commonJS({
     var Range = require_range();
     var satisfies = require_satisfies();
     var gt = require_gt();
-    var lt = require_lt();
+    var lt2 = require_lt();
     var lte = require_lte();
     var gte = require_gte();
     var outside = (version, range, hilo, options) => {
@@ -20757,12 +20757,12 @@ var require_outside = __commonJS({
         case ">":
           gtfn = gt;
           ltefn = lte;
-          ltfn = lt;
+          ltfn = lt2;
           comp = ">";
           ecomp = ">=";
           break;
         case "<":
-          gtfn = lt;
+          gtfn = lt2;
           ltefn = gte;
           ltfn = gt;
           comp = "<";
@@ -20942,12 +20942,12 @@ var require_subset = __commonJS({
         }
       }
       const eqSet = /* @__PURE__ */ new Set();
-      let gt, lt;
+      let gt, lt2;
       for (const c of sub) {
         if (c.operator === ">" || c.operator === ">=") {
           gt = higherGT(gt, c, options);
         } else if (c.operator === "<" || c.operator === "<=") {
-          lt = lowerLT(lt, c, options);
+          lt2 = lowerLT(lt2, c, options);
         } else {
           eqSet.add(c.semver);
         }
@@ -20956,11 +20956,11 @@ var require_subset = __commonJS({
         return null;
       }
       let gtltComp;
-      if (gt && lt) {
-        gtltComp = compare(gt.semver, lt.semver, options);
+      if (gt && lt2) {
+        gtltComp = compare(gt.semver, lt2.semver, options);
         if (gtltComp > 0) {
           return null;
-        } else if (gtltComp === 0 && (gt.operator !== ">=" || lt.operator !== "<=")) {
+        } else if (gtltComp === 0 && (gt.operator !== ">=" || lt2.operator !== "<=")) {
           return null;
         }
       }
@@ -20968,7 +20968,7 @@ var require_subset = __commonJS({
         if (gt && !satisfies(eq, String(gt), options)) {
           return null;
         }
-        if (lt && !satisfies(eq, String(lt), options)) {
+        if (lt2 && !satisfies(eq, String(lt2), options)) {
           return null;
         }
         for (const c of dom) {
@@ -20980,9 +20980,9 @@ var require_subset = __commonJS({
       }
       let higher, lower;
       let hasDomLT, hasDomGT;
-      let needDomLTPre = lt && !options.includePrerelease && lt.semver.prerelease.length ? lt.semver : false;
+      let needDomLTPre = lt2 && !options.includePrerelease && lt2.semver.prerelease.length ? lt2.semver : false;
       let needDomGTPre = gt && !options.includePrerelease && gt.semver.prerelease.length ? gt.semver : false;
-      if (needDomLTPre && needDomLTPre.prerelease.length === 1 && lt.operator === "<" && needDomLTPre.prerelease[0] === 0) {
+      if (needDomLTPre && needDomLTPre.prerelease.length === 1 && lt2.operator === "<" && needDomLTPre.prerelease[0] === 0) {
         needDomLTPre = false;
       }
       for (const c of dom) {
@@ -21003,29 +21003,29 @@ var require_subset = __commonJS({
             return false;
           }
         }
-        if (lt) {
+        if (lt2) {
           if (needDomLTPre) {
             if (c.semver.prerelease && c.semver.prerelease.length && c.semver.major === needDomLTPre.major && c.semver.minor === needDomLTPre.minor && c.semver.patch === needDomLTPre.patch) {
               needDomLTPre = false;
             }
           }
           if (c.operator === "<" || c.operator === "<=") {
-            lower = lowerLT(lt, c, options);
-            if (lower === c && lower !== lt) {
+            lower = lowerLT(lt2, c, options);
+            if (lower === c && lower !== lt2) {
               return false;
             }
-          } else if (lt.operator === "<=" && !c.test(lt.semver)) {
+          } else if (lt2.operator === "<=" && !c.test(lt2.semver)) {
             return false;
           }
         }
-        if (!c.operator && (lt || gt) && gtltComp !== 0) {
+        if (!c.operator && (lt2 || gt) && gtltComp !== 0) {
           return false;
         }
       }
-      if (gt && hasDomLT && !lt && gtltComp !== 0) {
+      if (gt && hasDomLT && !lt2 && gtltComp !== 0) {
         return false;
       }
-      if (lt && hasDomGT && !gt && gtltComp !== 0) {
+      if (lt2 && hasDomGT && !gt && gtltComp !== 0) {
         return false;
       }
       if (needDomGTPre || needDomLTPre) {
@@ -21060,14 +21060,14 @@ var require_semver2 = __commonJS({
     var SemVer = require_semver();
     var identifiers = require_identifiers();
     var parse5 = require_parse2();
-    var valid3 = require_valid();
+    var valid4 = require_valid();
     var clean = require_clean();
     var inc2 = require_inc();
     var diff = require_diff();
     var major = require_major();
     var minor = require_minor();
     var patch = require_patch();
-    var prerelease = require_prerelease();
+    var prerelease2 = require_prerelease();
     var compare = require_compare();
     var rcompare2 = require_rcompare();
     var compareLoose = require_compare_loose();
@@ -21075,7 +21075,7 @@ var require_semver2 = __commonJS({
     var sort = require_sort();
     var rsort = require_rsort();
     var gt = require_gt();
-    var lt = require_lt();
+    var lt2 = require_lt();
     var eq = require_eq();
     var neq = require_neq();
     var gte = require_gte();
@@ -21099,14 +21099,14 @@ var require_semver2 = __commonJS({
     var subset = require_subset();
     module.exports = {
       parse: parse5,
-      valid: valid3,
+      valid: valid4,
       clean,
       inc: inc2,
       diff,
       major,
       minor,
       patch,
-      prerelease,
+      prerelease: prerelease2,
       compare,
       rcompare: rcompare2,
       compareLoose,
@@ -21114,7 +21114,7 @@ var require_semver2 = __commonJS({
       sort,
       rsort,
       gt,
-      lt,
+      lt: lt2,
       eq,
       neq,
       gte,
@@ -23140,7 +23140,7 @@ function info(message) {
 }
 
 // src/core/action.ts
-var semver2 = __toESM(require_semver2(), 1);
+var semver3 = __toESM(require_semver2(), 1);
 
 // src/git/git.ts
 async function getCommitsBetween(from, to) {
@@ -27393,7 +27393,7 @@ function getOctokit(token, options, ...additionalPlugins) {
 
 // src/git/github.ts
 async function createRelease(options) {
-  const { token, tag, title, body, draft, prerelease } = options;
+  const { token, tag, title, body, draft, prerelease: prerelease2 } = options;
   const octokit = getOctokit(token);
   const { owner, repo } = context2.repo;
   const response = await octokit.rest.repos.createRelease({
@@ -27403,10 +27403,19 @@ async function createRelease(options) {
     name: title,
     body,
     draft,
-    prerelease,
+    prerelease: prerelease2,
     generate_release_notes: false
   });
   return response.data.html_url;
+}
+async function releaseExists(options) {
+  const { token, tag } = options;
+  const octokit = getOctokit(token);
+  const { owner, repo } = context2.repo;
+  for await (const { data } of octokit.paginate.iterator(octokit.rest.repos.listReleases, { owner, repo, per_page: 100 })) {
+    if (data.some((release) => release.tag_name === tag)) return true;
+  }
+  return false;
 }
 
 // src/release/changelog.ts
@@ -27704,15 +27713,27 @@ async function writeSummary(options) {
   await summary2.write();
 }
 
+// src/release/tags.ts
+var semver = __toESM(require_semver2(), 1);
+function findLatestTag(tags) {
+  const valid4 = tags.filter((t) => semver.valid(t.version));
+  if (valid4.length === 0) return null;
+  valid4.sort((a, b) => semver.rcompare(a.version, b.version));
+  return valid4[0] ?? null;
+}
+function findPreviousTag(tags, current) {
+  return findLatestTag(tags.filter((t) => semver.valid(t.version) && semver.lt(t.version, current.version)));
+}
+
 // src/release/title.ts
 function formatReleaseTitle(template, values) {
   return template.replaceAll("{{version}}", values.version).replaceAll("{{tag}}", values.tag);
 }
 
 // src/release/version.ts
-var semver = __toESM(require_semver2(), 1);
+var semver2 = __toESM(require_semver2(), 1);
 function calculateVersion(options) {
-  const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease, prereleaseSuffix } = options;
+  const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease: prerelease2, prereleaseSuffix } = options;
   let effectiveBump;
   if (bump === "none") {
     if (defaultBump === "false" || defaultBump === "none") {
@@ -27730,12 +27751,12 @@ function calculateVersion(options) {
     effectiveBump = bump;
   }
   if (!previousTag) {
-    const version = semver.valid(initialVersion);
+    const version = semver2.valid(initialVersion);
     if (!version) {
       throw new Error(`Invalid initial version "${initialVersion}". Must be a valid semver string (e.g. "0.1.0").`);
     }
     const tag = `${prefix}${version}`;
-    if (prerelease && prereleaseSuffix) {
+    if (prerelease2 && prereleaseSuffix) {
       const preVersion = `${version}-${sanitizeIdentifier(prereleaseSuffix)}.0`;
       return {
         version: preVersion,
@@ -27756,26 +27777,26 @@ function calculateVersion(options) {
     };
   }
   const previousVersion = stripPrefix(previousTag, prefix);
-  const parsed = semver.parse(previousVersion);
+  const parsed = semver2.parse(previousVersion);
   if (!parsed) {
     throw new Error(`Could not parse previous version "${previousVersion}" from tag "${previousTag}".`);
   }
   let nextVersion;
-  if (prerelease && prereleaseSuffix) {
+  if (prerelease2 && prereleaseSuffix) {
     const identifier = sanitizeIdentifier(prereleaseSuffix);
     if (parsed.prerelease.length > 0 && String(parsed.prerelease[0]) === identifier) {
       const currentLevel = parsed.patch > 0 ? "patch" : parsed.minor > 0 ? "minor" : "major";
       const bumpPriority = { none: 0, patch: 1, minor: 2, major: 3 };
       if (bumpPriority[effectiveBump] <= bumpPriority[currentLevel]) {
-        nextVersion = semver.inc(parsed, "prerelease", identifier);
+        nextVersion = semver2.inc(parsed, "prerelease", identifier);
       } else {
-        nextVersion = semver.inc(parsed, `pre${effectiveBump}`, identifier);
+        nextVersion = semver2.inc(parsed, `pre${effectiveBump}`, identifier);
       }
     } else {
-      nextVersion = semver.inc(parsed, `pre${effectiveBump}`, identifier);
+      nextVersion = semver2.inc(parsed, `pre${effectiveBump}`, identifier);
     }
   } else {
-    nextVersion = semver.inc(parsed, effectiveBump);
+    nextVersion = semver2.inc(parsed, effectiveBump);
   }
   if (!nextVersion) {
     throw new Error(`Failed to increment version "${previousVersion}" with bump "${effectiveBump}".`);
@@ -27826,7 +27847,7 @@ function getConfig() {
 async function run() {
   const config = getConfig();
   setSecret(config.token);
-  if (!semver2.valid(config.initialVersion)) {
+  if (!semver3.valid(config.initialVersion)) {
     setFailed(`Invalid initial-version value: "${config.initialVersion}". Must be a valid semver string (e.g. "0.1.0").`);
     return;
   }
@@ -27894,6 +27915,9 @@ async function run() {
     setOutput("bump", "none");
     setOutput("previous-tag", latestTag.name);
     setOutput("previous-version", latestTag.version);
+    if (config.createRelease && !config.dryRun) {
+      await createMissingRelease(latestTag, tags, config);
+    }
     return;
   }
   const commits = parseCommits(rawCommits);
@@ -27992,14 +28016,28 @@ async function run() {
   });
   info("\u2708\uFE0F Release Pilot complete!");
 }
-function findLatestTag(tags) {
-  const valid3 = tags.filter((t) => semver2.valid(t.version));
-  if (valid3.length === 0) return null;
-  valid3.sort((a, b) => semver2.rcompare(a.version, b.version));
-  return valid3[0] ?? null;
+async function createMissingRelease(latestTag, tags, config) {
+  if (await releaseExists({ token: config.token, tag: latestTag.name })) return;
+  info(`\u{1FA79} Tag ${latestTag.name} has no GitHub Release (an earlier run likely failed after tagging) \u2014 creating it now.`);
+  const previousTag = findPreviousTag(tags, latestTag);
+  const rawCommits = (await getCommitsBetween(previousTag?.sha ?? null, latestTag.sha)).filter((c) => !isSkipCi(c.message));
+  const changelog = generateChangelog(parseCommits(rawCommits), mergeRules(config.customRules), {
+    repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`,
+    includeBody: config.includeBodyInChangelog
+  });
+  const releaseUrl = await createRelease({
+    token: config.token,
+    tag: latestTag.name,
+    title: formatReleaseTitle(config.releaseTitle, { version: latestTag.version, tag: latestTag.name }),
+    body: changelog,
+    draft: config.releaseDraft,
+    prerelease: semver3.prerelease(latestTag.version) !== null
+  });
+  info(`\u2705 Release created: ${releaseUrl}`);
+  setOutput("release-url", releaseUrl);
 }
 async function createFloatingTags(version, prefix, sha, config) {
-  const parsed = semver2.parse(version);
+  const parsed = semver3.parse(version);
   if (!parsed) return;
   if (parsed.prerelease.length > 0) {
     debug("Skipping floating tags for prerelease version.");
