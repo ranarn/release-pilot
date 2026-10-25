@@ -27420,8 +27420,8 @@ async function releaseExists(options) {
 
 // src/release/changelog.ts
 function generateChangelog(commits, rules, options = {}) {
-  const { repositoryUrl, includeBody = false } = options;
-  if (commits.length === 0) {
+  const { repositoryUrl, includeBody = false, compareUrl } = options;
+  if (commits.length === 0 && !compareUrl) {
     return "";
   }
   const sectionMap = /* @__PURE__ */ new Map();
@@ -27460,6 +27460,9 @@ function generateChangelog(commits, rules, options = {}) {
       }
     }
     parts.push("");
+  }
+  if (compareUrl) {
+    parts.push(`**Full Changelog**: ${compareUrl}`);
   }
   return parts.join("\n").trim();
 }
@@ -27733,7 +27736,7 @@ function formatReleaseTitle(template, values) {
 // src/release/version.ts
 var semver2 = __toESM(require_semver2(), 1);
 function calculateVersion(options) {
-  const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease: prerelease2, prereleaseSuffix } = options;
+  const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease: prerelease2, prereleaseSuffix, bumpMinorPreMajor = false } = options;
   let effectiveBump;
   if (bump === "none") {
     if (defaultBump === "false" || defaultBump === "none") {
@@ -27781,6 +27784,9 @@ function calculateVersion(options) {
   if (!parsed) {
     throw new Error(`Could not parse previous version "${previousVersion}" from tag "${previousTag}".`);
   }
+  if (bumpMinorPreMajor && parsed.major === 0 && effectiveBump === "major") {
+    effectiveBump = "minor";
+  }
   let nextVersion;
   if (prerelease2 && prereleaseSuffix) {
     const identifier = sanitizeIdentifier(prereleaseSuffix);
@@ -27808,6 +27814,18 @@ function calculateVersion(options) {
     previousTag,
     bump: effectiveBump,
     isInitial: false
+  };
+}
+function versionComponents(version) {
+  const parsed = semver2.parse(version);
+  if (!parsed) {
+    throw new Error(`Could not parse version "${version}".`);
+  }
+  return {
+    major: String(parsed.major),
+    minor: String(parsed.minor),
+    patch: String(parsed.patch),
+    prerelease: parsed.prerelease.join(".")
   };
 }
 function stripPrefix(tag, prefix) {
@@ -27840,6 +27858,7 @@ function getConfig() {
     dryRun: getBooleanInput("dry-run"),
     customRules: parseCustomRules(customRulesInput),
     includeBodyInChangelog: getBooleanInput("include-body-in-changelog"),
+    bumpMinorPreMajor: getBooleanInput("bump-minor-pre-major"),
     majorTag: getBooleanInput("major-tag"),
     minorTag: getBooleanInput("minor-tag")
   };
@@ -27939,7 +27958,8 @@ async function run() {
     defaultBump: config.defaultBump,
     initialVersion: config.initialVersion,
     prerelease: config.prerelease,
-    prereleaseSuffix
+    prereleaseSuffix,
+    bumpMinorPreMajor: config.bumpMinorPreMajor
   });
   setOutput("bump", result.bump);
   if (!result.version) {
@@ -27955,6 +27975,11 @@ async function run() {
   info(`\u{1F3F7}\uFE0F  New tag: ${result.tag}`);
   setOutput("version", result.version);
   setOutput("tag", result.tag);
+  const components = versionComponents(result.version);
+  setOutput("major", components.major);
+  setOutput("minor", components.minor);
+  setOutput("patch", components.patch);
+  setOutput("prerelease", components.prerelease);
   if (result.previousTag) {
     setOutput("previous-tag", result.previousTag);
     setOutput("previous-version", result.previousVersion ?? "");
@@ -27962,7 +27987,8 @@ async function run() {
   const repositoryUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`;
   const changelog = generateChangelog(commits, rules, {
     repositoryUrl,
-    includeBody: config.includeBodyInChangelog
+    includeBody: config.includeBodyInChangelog,
+    compareUrl: result.previousTag ? `${repositoryUrl}/compare/${result.previousTag}...${result.tag}` : void 0
   });
   setOutput("changelog", changelog);
   if (changelog) {
@@ -28021,9 +28047,11 @@ async function createMissingRelease(latestTag, tags, config) {
   info(`\u{1FA79} Tag ${latestTag.name} has no GitHub Release (an earlier run likely failed after tagging) \u2014 creating it now.`);
   const previousTag = findPreviousTag(tags, latestTag);
   const rawCommits = (await getCommitsBetween(previousTag?.sha ?? null, latestTag.sha)).filter((c) => !isSkipCi(c.message));
+  const repositoryUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`;
   const changelog = generateChangelog(parseCommits(rawCommits), mergeRules(config.customRules), {
-    repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`,
-    includeBody: config.includeBodyInChangelog
+    repositoryUrl,
+    includeBody: config.includeBodyInChangelog,
+    compareUrl: previousTag ? `${repositoryUrl}/compare/${previousTag.name}...${latestTag.name}` : void 0
   });
   const releaseUrl = await createRelease({
     token: config.token,

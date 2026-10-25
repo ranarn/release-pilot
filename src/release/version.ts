@@ -19,8 +19,9 @@ export function calculateVersion(options: {
   initialVersion: string
   prerelease: boolean
   prereleaseSuffix: string
+  bumpMinorPreMajor?: boolean
 }): VersionResult {
-  const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease, prereleaseSuffix } = options
+  const { previousTag, prefix, bump, defaultBump, initialVersion, prerelease, prereleaseSuffix, bumpMinorPreMajor = false } = options
 
   // Determine the effective bump
   let effectiveBump: BumpType
@@ -80,6 +81,10 @@ export function calculateVersion(options: {
     throw new Error(`Could not parse previous version "${previousVersion}" from tag "${previousTag}".`)
   }
 
+  if (bumpMinorPreMajor && parsed.major === 0 && effectiveBump === 'major') {
+    effectiveBump = 'minor'
+  }
+
   // Calculate next version
   let nextVersion: string | null
 
@@ -116,6 +121,23 @@ export function calculateVersion(options: {
     previousTag,
     bump: effectiveBump,
     isInitial: false,
+  }
+}
+
+/**
+ * Split a version into its components for use as action outputs.
+ * `prerelease` is the joined prerelease identifiers (e.g. "beta.1"), or "" for a stable version.
+ */
+export function versionComponents(version: string): { major: string; minor: string; patch: string; prerelease: string } {
+  const parsed = semver.parse(version)
+  if (!parsed) {
+    throw new Error(`Could not parse version "${version}".`)
+  }
+  return {
+    major: String(parsed.major),
+    minor: String(parsed.minor),
+    patch: String(parsed.patch),
+    prerelease: parsed.prerelease.join('.'),
   }
 }
 

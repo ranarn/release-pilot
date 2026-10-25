@@ -141,6 +141,22 @@ describe('generateChangelog', () => {
     expect(changelog).not.toContain('Tokens are now issued per session.')
   })
 
+  it('should end with a Full Changelog link when a compare URL is given', () => {
+    const commits = [makeCommit({ type: 'fix', description: 'fix crash', hash: 'bbb2222' })]
+    const changelog = generateChangelog(commits, DEFAULT_RULES, { compareUrl: 'https://github.com/o/r/compare/v1.0.0...v1.0.1' })
+    expect(changelog).toBe('### 🐛 Bug Fixes\n\n- fix crash (bbb2222)\n\n**Full Changelog**: https://github.com/o/r/compare/v1.0.0...v1.0.1')
+  })
+
+  it('should return only the Full Changelog link when there are no conventional commits', () => {
+    const changelog = generateChangelog([], DEFAULT_RULES, { compareUrl: 'https://github.com/o/r/compare/v1.0.0...v1.0.1' })
+    expect(changelog).toBe('**Full Changelog**: https://github.com/o/r/compare/v1.0.0...v1.0.1')
+  })
+
+  it('should omit the Full Changelog link without a compare URL', () => {
+    const changelog = generateChangelog([makeCommit({ type: 'fix' })], DEFAULT_RULES)
+    expect(changelog).not.toContain('Full Changelog')
+  })
+
   it('should order sections by rule definition order', () => {
     const commits = [makeCommit({ type: 'fix', description: 'fix bug' }), makeCommit({ type: 'feat', description: 'new feature' })]
     const changelog = generateChangelog(commits, DEFAULT_RULES)

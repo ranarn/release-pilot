@@ -17,7 +17,7 @@ import { determineBump, mergeRules, parseCustomRules } from '../release/rules.js
 import { writeSummary } from '../release/summary.js'
 import { findLatestTag, findPreviousTag } from '../release/tags.js'
 import { formatReleaseTitle } from '../release/title.js'
-import { calculateVersion } from '../release/version.js'
+import { calculateVersion, versionComponents } from '../release/version.js'
 
 /**
  * Parse action inputs into a typed configuration.
@@ -45,6 +45,7 @@ function getConfig(): ActionConfig {
     dryRun: core.getBooleanInput('dry-run'),
     customRules: parseCustomRules(customRulesInput),
     includeBodyInChangelog: core.getBooleanInput('include-body-in-changelog'),
+    bumpMinorPreMajor: core.getBooleanInput('bump-minor-pre-major'),
     majorTag: core.getBooleanInput('major-tag'),
     minorTag: core.getBooleanInput('minor-tag'),
   }
@@ -178,6 +179,7 @@ export async function run(): Promise<void> {
     initialVersion: config.initialVersion,
     prerelease: config.prerelease,
     prereleaseSuffix,
+    bumpMinorPreMajor: config.bumpMinorPreMajor,
   })
 
   // Set outputs
@@ -199,6 +201,12 @@ export async function run(): Promise<void> {
   core.setOutput('version', result.version)
   core.setOutput('tag', result.tag)
 
+  const components = versionComponents(result.version)
+  core.setOutput('major', components.major)
+  core.setOutput('minor', components.minor)
+  core.setOutput('patch', components.patch)
+  core.setOutput('prerelease', components.prerelease)
+
   if (result.previousTag) {
     core.setOutput('previous-tag', result.previousTag)
     core.setOutput('previous-version', result.previousVersion ?? '')
@@ -209,6 +217,7 @@ export async function run(): Promise<void> {
   const changelog = generateChangelog(commits, rules, {
     repositoryUrl,
     includeBody: config.includeBodyInChangelog,
+    compareUrl: result.previousTag ? `${repositoryUrl}/compare/${result.previousTag}...${result.tag}` : undefined,
   })
 
   core.setOutput('changelog', changelog)
@@ -292,9 +301,11 @@ async function createMissingRelease(latestTag: TagInfo, tags: TagInfo[], config:
 
   const previousTag = findPreviousTag(tags, latestTag)
   const rawCommits = (await getCommitsBetween(previousTag?.sha ?? null, latestTag.sha)).filter(c => !isSkipCi(c.message))
+  const repositoryUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`
   const changelog = generateChangelog(parseCommits(rawCommits), mergeRules(config.customRules), {
-    repositoryUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}`,
+    repositoryUrl,
     includeBody: config.includeBodyInChangelog,
+    compareUrl: previousTag ? `${repositoryUrl}/compare/${previousTag.name}...${latestTag.name}` : undefined,
   })
 
   const releaseUrl = await createRelease({

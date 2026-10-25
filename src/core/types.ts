@@ -78,6 +78,8 @@ export interface ActionConfig {
   dryRun: boolean
   customRules: ReleaseRule[]
   includeBodyInChangelog: boolean
+  /** Below 1.0.0, turn major bumps (e.g. breaking changes) into minor bumps. */
+  bumpMinorPreMajor: boolean
   /** Create/update a floating major version tag (e.g., v2 → latest v2.x.x). */
   majorTag: boolean
   /** Create/update a floating minor version tag (e.g., v2.3 → latest v2.3.x). */
