@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { parseCommits } from '../../src/release/commits.js'
 import { DEFAULT_RULES, determineBump } from '../../src/release/rules.js'
-import { calculateVersion, sanitizeIdentifier, stripPrefix } from '../../src/release/version.js'
+import { calculateVersion, sanitizeIdentifier, stripPrefix, versionComponents } from '../../src/release/version.js'
 
 describe('calculateVersion', () => {
   it('should handle initial release with no previous tags', () => {
@@ -247,6 +247,56 @@ describe('calculateVersion', () => {
         prereleaseSuffix: '',
       })
     ).toThrow('Invalid initial version')
+  })
+})
+
+describe('calculateVersion — bump-minor-pre-major', () => {
+  const base = {
+    prefix: 'v',
+    defaultBump: 'patch' as const,
+    initialVersion: '0.1.0',
+    prerelease: false,
+    prereleaseSuffix: '',
+    bumpMinorPreMajor: true,
+  }
+
+  it('should turn a breaking change below 1.0.0 into a minor bump', () => {
+    const bump = determineBump(parseCommits([{ message: 'feat!: drop legacy API', hash: 'abc' }]), DEFAULT_RULES)
+    const result = calculateVersion({ ...base, previousTag: 'v0.3.0', bump })
+    expect(result.version).toBe('0.4.0')
+    expect(result.bump).toBe('minor')
+  })
+
+  it('should leave major bumps alone at or above 1.0.0', () => {
+    expect(calculateVersion({ ...base, previousTag: 'v1.4.2', bump: 'major' }).version).toBe('2.0.0')
+  })
+
+  it('should leave minor and patch bumps below 1.0.0 unchanged', () => {
+    expect(calculateVersion({ ...base, previousTag: 'v0.3.1', bump: 'minor' }).version).toBe('0.4.0')
+    expect(calculateVersion({ ...base, previousTag: 'v0.3.1', bump: 'patch' }).version).toBe('0.3.2')
+  })
+
+  it('should apply to prereleases below 1.0.0', () => {
+    const result = calculateVersion({ ...base, previousTag: 'v0.3.0', bump: 'major', prerelease: true, prereleaseSuffix: 'beta' })
+    expect(result.version).toBe('0.4.0-beta.0')
+  })
+
+  it('should release 1.0.0 for a breaking change below 1.0.0 when disabled', () => {
+    expect(calculateVersion({ ...base, bumpMinorPreMajor: false, previousTag: 'v0.3.0', bump: 'major' }).version).toBe('1.0.0')
+  })
+})
+
+describe('versionComponents', () => {
+  it('should split a stable version', () => {
+    expect(versionComponents('1.2.3')).toEqual({ major: '1', minor: '2', patch: '3', prerelease: '' })
+  })
+
+  it('should join prerelease identifiers', () => {
+    expect(versionComponents('2.0.0-feature-my-api.4')).toEqual({ major: '2', minor: '0', patch: '0', prerelease: 'feature-my-api.4' })
+  })
+
+  it('should throw on an invalid version', () => {
+    expect(() => versionComponents('not-a-version')).toThrow('Could not parse version')
   })
 })
 

@@ -20,11 +20,13 @@ export function generateChangelog(
   options: {
     repositoryUrl?: string
     includeBody?: boolean
+    /** Appended as a "Full Changelog" link, e.g. https://github.com/o/r/compare/v1.0.0...v1.1.0 */
+    compareUrl?: string
   } = {}
 ): string {
-  const { repositoryUrl, includeBody = false } = options
+  const { repositoryUrl, includeBody = false, compareUrl } = options
 
-  if (commits.length === 0) {
+  if (commits.length === 0 && !compareUrl) {
     return ''
   }
 
@@ -79,6 +81,10 @@ export function generateChangelog(
       }
     }
     parts.push('')
+  }
+
+  if (compareUrl) {
+    parts.push(`**Full Changelog**: ${compareUrl}`)
   }
 
   return parts.join('\n').trim()

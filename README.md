@@ -184,6 +184,7 @@ just like `actions/checkout@v7` does:
 | `dry-run` | Calculate without creating anything | `false` |
 | `custom-rules` | Custom commit type rules | `''` |
 | `include-body-in-changelog` | Include commit body in changelog | `false` |
+| `bump-minor-pre-major` | Below 1.0.0, turn major bumps (e.g. breaking changes) into minor bumps (`0.3.0` → `0.4.0`) | `false` |
 | `major-tag` | Create/update floating major tag (`v2` → latest `v2.x.x`) | `false` |
 | `minor-tag` | Create/update floating minor tag (`v2.3` → latest `v2.3.x`) | `false` |
 
@@ -193,10 +194,12 @@ just like `actions/checkout@v7` does:
 |--------|-------------|----------|---------|
 | `version` | New version without prefix | A version was calculated (also in dry run) | `1.2.3` |
 | `tag` | New tag with prefix | A version was calculated (also in dry run) | `v1.2.3` |
+| `major` / `minor` / `patch` | Components of the new version | A version was calculated (also in dry run) | `1` / `2` / `3` |
+| `prerelease` | Prerelease identifiers of the new version, empty for stable | A version was calculated (also in dry run) | `beta.1` |
 | `previous-version` | Previous version | A previous tag exists — not on pull request or non-release-branch skips | `1.2.2` |
 | `previous-tag` | Previous tag | Same as `previous-version` | `v1.2.2` |
 | `bump` | Bump type applied | Always | `minor` |
-| `changelog` | Generated changelog (markdown) | A version was calculated (also in dry run) | See below |
+| `changelog` | Generated changelog (markdown), ending with a **Full Changelog** compare link when a previous tag exists | A version was calculated (also in dry run) | See below |
 | `release-url` | URL to GitHub Release | A GitHub Release was created | `https://...` |
 | `released` | Whether a new version tag was created. `true` regardless of whether a GitHub Release was made — check `release-url` for that. | Always | `true` |
 
@@ -246,7 +249,7 @@ feat: refactor authentication
 BREAKING CHANGE: The auth token format has changed.
 ```
 
-This also applies below 1.0.0: a breaking change during `0.x` releases `1.0.0`.
+This also applies below 1.0.0: a breaking change during `0.x` releases `1.0.0`. To stay in `0.x` during initial development, set `bump-minor-pre-major: true` — breaking changes then bump minor (`0.3.0` → `0.4.0`) until you tag `v1.0.0` yourself (`git tag -a v1.0.0 -m "v1.0.0" && git push origin v1.0.0`) or turn the option off.
 
 ## How It Works
 

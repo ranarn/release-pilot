@@ -85,6 +85,11 @@ inputs:
     required: false
     default: 'false'
 
+  bump-minor-pre-major:
+    description: 'Below 1.0.0, turn major bumps (e.g. breaking changes) into minor bumps, so 0.3.0 + a breaking change releases 0.4.0 instead of 1.0.0. Does not affect the initial release or versions at or above 1.0.0.'
+    required: false
+    default: 'false'
+
   major-tag:
     description: 'Create/update a floating major version tag (e.g., v2 always points to the latest v2.x.x). Perfect for GitHub Actions. Skipped for prerelease versions.'
     required: false
@@ -100,6 +105,14 @@ outputs:
     description: 'The new version number without prefix (e.g., "1.2.3"). Empty when no version was calculated.'
   tag:
     description: 'The new tag with prefix (e.g., "v1.2.3"). Empty when no version was calculated.'
+  major:
+    description: 'Major component of the new version (e.g., "1" for 1.2.3). Empty when no version was calculated.'
+  minor:
+    description: 'Minor component of the new version (e.g., "2" for 1.2.3). Empty when no version was calculated.'
+  patch:
+    description: 'Patch component of the new version (e.g., "3" for 1.2.3). Empty when no version was calculated.'
+  prerelease:
+    description: 'Prerelease identifiers of the new version (e.g., "beta.1" for 1.2.3-beta.1). Empty for stable versions or when no version was calculated.'
   previous-version:
     description: 'The previous version number without prefix. Empty when there is no previous tag, and on pull request or non-release-branch skips.'
   previous-tag:
@@ -107,7 +120,7 @@ outputs:
   bump:
     description: 'The bump type that was applied: "major", "minor", "patch", or "none".'
   changelog:
-    description: 'The generated changelog in markdown format. Empty when no version was calculated.'
+    description: 'The generated changelog in markdown format, ending with a "Full Changelog" compare link when a previous tag exists. Empty when no version was calculated.'
   release-url:
     description: 'URL to the GitHub Release (if created).'
   released:
