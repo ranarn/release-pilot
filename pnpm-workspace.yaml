@@ -14,3 +14,7 @@ minimumReleaseAgeExclude:
   - '@biomejs/cli-linux-x64@2.5.8'
   - '@biomejs/cli-win32-arm64@2.5.8'
   - '@biomejs/cli-win32-x64@2.5.8'
+
+# Pin the store dir name length (Windows default is 60, Linux 120) so dist/main.js
+# built locally on Windows is byte-identical to the one CI builds on Linux.
+virtualStoreDirMaxLength: 60
