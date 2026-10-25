@@ -28,3 +28,18 @@ export async function createRelease(options: { token: string; tag: string; title
 
   return response.data.html_url
 }
+
+/**
+ * Check whether a GitHub Release (published or draft) exists for the given tag.
+ */
+export async function releaseExists(options: { token: string; tag: string }): Promise<boolean> {
+  const { token, tag } = options
+  const octokit = github.getOctokit(token)
+  const { owner, repo } = github.context.repo
+
+  // getReleaseByTag only returns published releases; listing also covers drafts
+  for await (const { data } of octokit.paginate.iterator(octokit.rest.repos.listReleases, { owner, repo, per_page: 100 })) {
+    if (data.some(release => release.tag_name === tag)) return true
+  }
+  return false
+}
