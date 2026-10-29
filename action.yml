@@ -57,6 +57,15 @@ inputs:
     required: false
     default: '{{tag}}'
 
+  release-files:
+    description: |
+      Files to upload as assets of the GitHub Release: newline-separated glob patterns (@actions/glob syntax; "!" excludes, "#" starts a comment). Requires create-release: true.
+      Every pattern must match at least one file and asset names (basenames) must be unique; otherwise the step fails before anything is tagged.
+      The release is created as a draft, the files are uploaded, then it is published unless release-draft is true, so this works with immutable releases.
+      On a re-run that finds the tag on the commit with a draft release, the files replace same-name assets on that draft; a published release is never changed and fails the step.
+    required: false
+    default: ''
+
   annotated:
     description: 'Create annotated tags (recommended) instead of lightweight tags.'
     required: false
@@ -127,6 +136,8 @@ outputs:
     description: 'The generated changelog in markdown format, ending with a "Full Changelog" compare link when a previous tag exists. Empty when no version was calculated.'
   release-url:
     description: 'URL to the GitHub Release (if created).'
+  release-assets:
+    description: 'JSON array of the download URLs of the files uploaded by release-files (e.g. ["https://github.com/o/r/releases/download/v1.2.3/app.zip"]). "[]" when nothing was uploaded.'
   released:
     description: 'Whether a new version tag was created ("true" or "false"). Does not indicate whether a GitHub Release was made — check release-url for that.'
 
