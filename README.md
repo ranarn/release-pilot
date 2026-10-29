@@ -95,6 +95,24 @@ Create releases as drafts so you can review, edit, or batch multiple releases be
 
 > Drafts are invisible to users until you publish them. Go to **Releases → Edit draft → Publish release** when you're ready. The Conventional Commits changelog is already written for you.
 
+### Release with Build Artifacts
+
+Upload files built earlier in the job as release assets:
+
+```yaml
+- name: ✈️ Release Pilot
+  uses: ranarn/release-pilot@v1
+  with:
+    token: ${{ secrets.GITHUB_TOKEN }}
+    create-release: true
+    release-files: |
+      dist/*.zip
+      dist/*.exe
+      !dist/*-debug.*
+```
+
+> The release is created as a draft, every file is uploaded, and only then is it published (unless `release-draft: true`). That order is what [immutable releases](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/immutable-releases) require, since a published immutable release accepts no asset changes. A pattern that matches nothing fails the step before anything is tagged.
+
 ### Tag + Use Version Downstream
 
 ```yaml
@@ -179,6 +197,7 @@ just like `actions/checkout@v7` does:
 | `create-release` | Create a GitHub Release | `false` |
 | `release-draft` | Create release as draft | `false` |
 | `release-title` | Release title template (`{{version}}`, `{{tag}}`) | `{{tag}}` |
+| `release-files` | Newline-separated glob patterns of files to upload as release assets (`!` excludes). Requires `create-release: true`. Each pattern must match a file and basenames must be unique. See [Release with Build Artifacts](#release-with-build-artifacts). | `''` |
 | `annotated` | Create annotated tags | `true` |
 | `commit-sha` | Override the commit SHA. Must be a full 40-character hex SHA. | `GITHUB_SHA` |
 | `dry-run` | Calculate without creating anything | `false` |
@@ -201,6 +220,7 @@ just like `actions/checkout@v7` does:
 | `bump` | Bump type applied | Always | `minor` |
 | `changelog` | Generated changelog (markdown), ending with a **Full Changelog** compare link when a previous tag exists | A version was calculated (also in dry run) | See below |
 | `release-url` | URL to GitHub Release | A GitHub Release was created | `https://...` |
+| `release-assets` | JSON array of download URLs of the uploaded `release-files` | Always after input validation; `[]` when nothing was uploaded | `["https://.../app.zip"]` |
 | `released` | Whether a new version tag was created. `true` regardless of whether a GitHub Release was made — check `release-url` for that. | Always | `true` |
 
 Outputs that are not set read as an empty string, so guard downstream steps with `if: steps.<id>.outputs.released == 'true'`.
@@ -293,6 +313,8 @@ Commits containing `[skip ci]` (case-insensitive; also `[skip-ci]` and `[skip_ci
 ### Re-runs recover a missing release
 
 If a run pushed the tag but failed before creating the GitHub Release, re-running it (or the next run with no new commits) creates the missing release for the latest tag, with the changelog since the tag before it. This only happens when `create-release` is `true`; existing releases, including drafts, are left untouched.
+
+With `release-files`, a re-run also completes an interrupted upload: when the latest tag points at the commit being released and its release is still a draft, the files replace same-name assets and the release is published (unless `release-draft: true`). A published release is never changed, so the step fails instead. When the latest tag points at an older commit (only `[skip ci]` commits since), no files are uploaded, because they were not built from the tagged commit.
 
 ### Branch patterns are fully anchored regex
 

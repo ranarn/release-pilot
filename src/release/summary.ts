@@ -11,8 +11,15 @@ import * as core from '@actions/core'
 /**
  * Write a rich summary to the GitHub Actions Job Summary.
  */
-export async function writeSummary(options: { result: VersionResult; commits: ConventionalCommit[]; changelog: string; releaseUrl: string | null; dryRun: boolean }): Promise<void> {
-  const { result, commits, changelog, releaseUrl, dryRun } = options
+export async function writeSummary(options: {
+  result: VersionResult
+  commits: ConventionalCommit[]
+  changelog: string
+  releaseUrl: string | null
+  releaseFiles: string[]
+  dryRun: boolean
+}): Promise<void> {
+  const { result, commits, changelog, releaseUrl, releaseFiles, dryRun } = options
 
   const summary = core.summary
 
@@ -46,6 +53,10 @@ export async function writeSummary(options: { result: VersionResult; commits: Co
 
   if (releaseUrl) {
     rows.push(['🔗 Release', `[View Release](${releaseUrl})`])
+  }
+
+  if (releaseFiles.length > 0) {
+    rows.push(['📎 Release Files', releaseFiles.map(name => `\`${name}\``).join(', ')])
   }
 
   summary.addTable([

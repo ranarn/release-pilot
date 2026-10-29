@@ -84,4 +84,15 @@ export interface ActionConfig {
   majorTag: boolean
   /** Create/update a floating minor version tag (e.g., v2.3 → latest v2.3.x). */
   minorTag: boolean
+  /** Newline-separated glob patterns of files to upload to the GitHub Release. */
+  releaseFiles: string
+}
+
+/** A GitHub Release as needed to upload assets and publish it. */
+export interface ReleaseInfo {
+  id: number
+  draft: boolean
+  htmlUrl: string
+  /** RFC 6570 URL template for asset uploads, as returned by the API. */
+  uploadUrl: string
 }
