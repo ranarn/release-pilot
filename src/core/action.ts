@@ -4,15 +4,19 @@
  * Ties together all modules to execute the Release Pilot workflow.
  */
 
-import type { ActionConfig, BumpType, TagInfo } from './types.js'
+import type { ActionConfig, BumpType, ReleaseInfo, TagInfo } from './types.js'
 
+import { stat } from 'node:fs/promises'
+import * as path from 'node:path'
 import * as core from '@actions/core'
+import * as glob from '@actions/glob'
 import * as semver from 'semver'
 
 import { createAnnotatedTag, createLightweightTag, forceUpdateTag, getBranchFromRef, getCommitsBetween, isPullRequest, isShallowClone, listTags, setupGit } from '../git/git.js'
-import { createRelease, releaseExists } from '../git/github.js'
+import { createRelease, findRelease, publishRelease, uploadReleaseAssets } from '../git/github.js'
 import { generateChangelog } from '../release/changelog.js'
 import { isSkipCi, parseCommits } from '../release/commits.js'
+import { parseReleaseFiles, selectReleaseFiles } from '../release/files.js'
 import { determineBump, mergeRules, parseCustomRules } from '../release/rules.js'
 import { writeSummary } from '../release/summary.js'
 import { findLatestTag, findPreviousTag } from '../release/tags.js'
@@ -48,6 +52,7 @@ function getConfig(): ActionConfig {
     bumpMinorPreMajor: core.getBooleanInput('bump-minor-pre-major'),
     majorTag: core.getBooleanInput('major-tag'),
     minorTag: core.getBooleanInput('minor-tag'),
+    releaseFiles: core.getInput('release-files'),
   }
 }
 
@@ -87,6 +92,13 @@ export async function run(): Promise<void> {
     return
   }
 
+  const releaseFilePatterns = parseReleaseFiles(config.releaseFiles)
+  if (releaseFilePatterns.include.length > 0 && !config.createRelease) {
+    core.setFailed('release-files requires create-release: true.')
+    return
+  }
+  core.setOutput('release-assets', '[]')
+
   // Check if this is a release branch
   const currentBranch = getBranchFromRef(GITHUB_REF)
 
@@ -118,6 +130,9 @@ export async function run(): Promise<void> {
     return
   }
 
+  // Resolved before anything is tagged, so a missing file fails the run with nothing pushed
+  const releaseFiles = await resolveReleaseFiles(releaseFilePatterns)
+
   // Get existing tags
   core.info('📡 Reading local tags...')
   const tags = await listTags(config.prefix)
@@ -146,7 +161,7 @@ export async function run(): Promise<void> {
     core.setOutput('previous-tag', latestTag.name)
     core.setOutput('previous-version', latestTag.version)
     if (config.createRelease && !config.dryRun) {
-      await createMissingRelease(latestTag, tags, config)
+      await createMissingRelease(latestTag, tags, config, releaseFiles, commitRef)
     }
     return
   }
@@ -236,6 +251,7 @@ export async function run(): Promise<void> {
       commits,
       changelog,
       releaseUrl: null,
+      releaseFiles: releaseFiles.map(file => path.basename(file)),
       dryRun: true,
     })
     return
@@ -263,17 +279,16 @@ export async function run(): Promise<void> {
     core.info('📦 Creating GitHub Release...')
     const title = formatReleaseTitle(config.releaseTitle, { version: result.version, tag: result.tag })
 
-    releaseUrl = await createRelease({
+    const release = await createRelease({
       token: config.token,
       tag: result.tag,
       title,
       body: changelog,
-      draft: config.releaseDraft,
+      draft: config.releaseDraft || releaseFiles.length > 0,
       prerelease: config.prerelease,
     })
 
-    core.info(`✅ Release created: ${releaseUrl}`)
-    core.setOutput('release-url', releaseUrl)
+    releaseUrl = await finishRelease(release, releaseFiles, config, false)
   }
 
   core.setOutput('released', 'true')
@@ -284,6 +299,7 @@ export async function run(): Promise<void> {
     commits,
     changelog,
     releaseUrl,
+    releaseFiles: config.createRelease ? releaseFiles.map(file => path.basename(file)) : [],
     dryRun: false,
   })
 
@@ -294,8 +310,23 @@ export async function run(): Promise<void> {
  * Create the GitHub Release for an existing tag that has none — the state left
  * behind when an earlier run pushed the tag but failed before creating the release.
  */
-async function createMissingRelease(latestTag: TagInfo, tags: TagInfo[], config: ActionConfig): Promise<void> {
-  if (await releaseExists({ token: config.token, tag: latestTag.name })) return
+async function createMissingRelease(latestTag: TagInfo, tags: TagInfo[], config: ActionConfig, releaseFiles: string[], commitRef: string): Promise<void> {
+  const tagOnCommit = latestTag.sha.toLowerCase() === commitRef.toLowerCase()
+  if (releaseFiles.length > 0 && !tagOnCommit) {
+    core.warning(`Not uploading release-files: ${latestTag.name} points at ${latestTag.sha}, not at ${commitRef}, so the files were not built from the tagged commit.`)
+  }
+  const files = tagOnCommit ? releaseFiles : []
+
+  const existing = await findRelease({ token: config.token, tag: latestTag.name })
+  if (existing) {
+    if (files.length === 0) return
+    if (!existing.draft) {
+      throw new Error(`The release for ${latestTag.name} is already published; release-files never replaces the assets of a published release.`)
+    }
+    core.info(`🩹 Found the draft release for ${latestTag.name} from an earlier run — completing it.`)
+    await finishRelease(existing, files, config, true)
+    return
+  }
 
   core.info(`🩹 Tag ${latestTag.name} has no GitHub Release (an earlier run likely failed after tagging) — creating it now.`)
 
@@ -308,17 +339,57 @@ async function createMissingRelease(latestTag: TagInfo, tags: TagInfo[], config:
     compareUrl: previousTag ? `${repositoryUrl}/compare/${previousTag.name}...${latestTag.name}` : undefined,
   })
 
-  const releaseUrl = await createRelease({
+  const release = await createRelease({
     token: config.token,
     tag: latestTag.name,
     title: formatReleaseTitle(config.releaseTitle, { version: latestTag.version, tag: latestTag.name }),
     body: changelog,
-    draft: config.releaseDraft,
+    draft: config.releaseDraft || files.length > 0,
     prerelease: semver.prerelease(latestTag.version) !== null,
   })
 
-  core.info(`✅ Release created: ${releaseUrl}`)
+  await finishRelease(release, files, config, false)
+}
+
+/**
+ * Upload the release files to a release and publish it unless release-draft is set.
+ * Releases with files are created as drafts so every asset is attached before publishing,
+ * which immutable releases require. Returns the URL of the final release.
+ */
+async function finishRelease(release: ReleaseInfo, files: string[], config: ActionConfig, replace: boolean): Promise<string> {
+  let releaseUrl = release.htmlUrl
+
+  if (files.length > 0) {
+    core.info(`📎 Uploading ${files.length} file(s) to the release...`)
+    const assets = await uploadReleaseAssets({ token: config.token, release, files, replace })
+    core.setOutput('release-assets', JSON.stringify(assets))
+
+    if (release.draft && !config.releaseDraft) {
+      releaseUrl = await publishRelease({ token: config.token, release })
+    }
+  }
+
+  core.info(`✅ Release ready: ${releaseUrl}`)
   core.setOutput('release-url', releaseUrl)
+  return releaseUrl
+}
+
+/**
+ * Resolve the release-files patterns to the files to upload. Each include pattern is
+ * globbed on its own (with every exclude pattern) so a pattern that matches nothing fails.
+ */
+async function resolveReleaseFiles(patterns: { include: string[]; exclude: string[] }): Promise<string[]> {
+  const matches: { pattern: string; files: string[] }[] = []
+  for (const pattern of patterns.include) {
+    const globber = await glob.create([pattern, ...patterns.exclude].join('\n'), { matchDirectories: false })
+    matches.push({ pattern, files: await globber.glob() })
+  }
+
+  const files = selectReleaseFiles(matches)
+  for (const file of files) {
+    core.info(`📎 Release file: ${file} (${(await stat(file)).size} bytes)`)
+  }
+  return files
 }
 
 /**
