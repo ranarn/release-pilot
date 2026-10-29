@@ -25,3 +25,11 @@ export function findLatestTag(tags: TagInfo[]): TagInfo | null {
 export function findPreviousTag(tags: TagInfo[], current: TagInfo): TagInfo | null {
   return findLatestTag(tags.filter(t => semver.valid(t.version) && semver.lt(t.version, current.version)))
 }
+
+/**
+ * Return the highest semver tag pointing at the given commit, or null when the commit carries none.
+ */
+export function findTagOnCommit(tags: TagInfo[], sha: string): TagInfo | null {
+  const commit = sha.toLowerCase()
+  return findLatestTag(tags.filter(t => t.sha.toLowerCase() === commit))
+}
