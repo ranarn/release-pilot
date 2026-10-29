@@ -2,7 +2,7 @@ import type { TagInfo } from '../../src/core/types.js'
 
 import { describe, expect, it } from 'vitest'
 
-import { findLatestTag, findPreviousTag } from '../../src/release/tags.js'
+import { findLatestTag, findPreviousTag, findTagOnCommit } from '../../src/release/tags.js'
 
 function tag(version: string): TagInfo {
   return { name: `v${version}`, version, sha: `sha-${version}` }
@@ -39,5 +39,31 @@ describe('findPreviousTag', () => {
 
   it('should return null for the first tag', () => {
     expect(findPreviousTag(tags, tag('1.0.0'))).toBeNull()
+  })
+})
+
+describe('findTagOnCommit', () => {
+  const onCommit = (version: string, sha: string): TagInfo => ({ name: `v${version}`, version, sha })
+  const head = 'a'.repeat(40)
+  const other = 'b'.repeat(40)
+
+  it('should return the semver tag on the commit', () => {
+    expect(findTagOnCommit([onCommit('1.1.0', other), onCommit('1.2.0', head)], head)?.name).toBe('v1.2.0')
+  })
+
+  it('should return the highest of several semver tags on the commit', () => {
+    expect(findTagOnCommit([onCommit('1.2.0-rc.1', head), onCommit('1.2.0', head)], head)?.name).toBe('v1.2.0')
+  })
+
+  it('should ignore floating and other non-semver tags on the commit', () => {
+    expect(findTagOnCommit([onCommit('1', head), onCommit('1.2', head)], head)).toBeNull()
+  })
+
+  it('should return null when no tag points at the commit', () => {
+    expect(findTagOnCommit([onCommit('1.2.0', other)], head)).toBeNull()
+  })
+
+  it('should compare SHAs case-insensitively', () => {
+    expect(findTagOnCommit([onCommit('1.2.0', head)], head.toUpperCase())?.name).toBe('v1.2.0')
   })
 })

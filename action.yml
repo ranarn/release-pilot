@@ -126,6 +126,10 @@ outputs:
     description: 'The previous version number without prefix. Empty when there is no previous tag, and on pull request or non-release-branch skips.'
   previous-tag:
     description: 'The previous tag with prefix. Empty when there is no previous tag, and on pull request or non-release-branch skips.'
+  existing-tag:
+    description: 'The highest semver tag (with prefix) already pointing at the commit being released, e.g. on a re-run after the tag was pushed. Informational only: version, tag and released keep their meaning. Empty when the commit carries no such tag, and on pull request or non-release-branch skips.'
+  existing-version:
+    description: 'The version of existing-tag without prefix. Empty when existing-tag is empty.'
   bump:
     description: 'The bump type that was applied: "major", "minor", "patch", or "none".'
   changelog:

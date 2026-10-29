@@ -19,7 +19,7 @@ import { isSkipCi, parseCommits } from '../release/commits.js'
 import { parseReleaseFiles, selectReleaseFiles } from '../release/files.js'
 import { determineBump, mergeRules, parseCustomRules } from '../release/rules.js'
 import { writeSummary } from '../release/summary.js'
-import { findLatestTag, findPreviousTag } from '../release/tags.js'
+import { findLatestTag, findPreviousTag, findTagOnCommit } from '../release/tags.js'
 import { formatReleaseTitle } from '../release/title.js'
 import { calculateVersion, versionComponents } from '../release/version.js'
 
@@ -145,6 +145,13 @@ export async function run(): Promise<void> {
     core.info(`📌 Latest tag: ${latestTag.name} (${latestTag.version})`)
   } else {
     core.info('📌 No previous tags found — this will be the initial release.')
+  }
+
+  const existingTag = findTagOnCommit(tags, commitRef)
+  if (existingTag) {
+    core.info(`📌 Commit ${commitRef} is already released as ${existingTag.name}.`)
+    core.setOutput('existing-tag', existingTag.name)
+    core.setOutput('existing-version', existingTag.version)
   }
 
   // Get commits since last tag

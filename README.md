@@ -217,6 +217,8 @@ just like `actions/checkout@v7` does:
 | `prerelease` | Prerelease identifiers of the new version, empty for stable | A version was calculated (also in dry run) | `beta.1` |
 | `previous-version` | Previous version | A previous tag exists — not on pull request or non-release-branch skips | `1.2.2` |
 | `previous-tag` | Previous tag | Same as `previous-version` | `v1.2.2` |
+| `existing-tag` | Highest semver tag already on the commit being released (e.g. on a re-run). Informational: `version`, `tag` and `released` are unaffected | The commit carries such a tag — not on pull request or non-release-branch skips | `v1.2.2` |
+| `existing-version` | Version of `existing-tag` without prefix | Same as `existing-tag` | `1.2.2` |
 | `bump` | Bump type applied | Always | `minor` |
 | `changelog` | Generated changelog (markdown), ending with a **Full Changelog** compare link when a previous tag exists | A version was calculated (also in dry run) | See below |
 | `release-url` | URL to GitHub Release | A GitHub Release was created | `https://...` |
@@ -315,6 +317,22 @@ Commits containing `[skip ci]` (case-insensitive; also `[skip-ci]` and `[skip_ci
 If a run pushed the tag but failed before creating the GitHub Release, re-running it (or the next run with no new commits) creates the missing release for the latest tag, with the changelog since the tag before it. This only happens when `create-release` is `true`; existing releases, including drafts, are left untouched.
 
 With `release-files`, a re-run also completes an interrupted upload: when the latest tag points at the commit being released and its release is still a draft, the files replace same-name assets and the release is published (unless `release-draft: true`). A published release is never changed, so the step fails instead. When the latest tag points at an older commit (only `[skip ci]` commits since), no files are uploaded, because they were not built from the tagged commit.
+
+On such a re-run `tag` and `version` stay empty and `released` is `false`, since no new version was created. Later steps that need the tag of the commit (to deploy or notify) read `existing-tag` instead:
+
+```yaml
+- name: ✈️ Release Pilot
+  id: release
+  uses: ranarn/release-pilot@v1
+  with:
+    create-release: true
+
+- name: 🚀 Deploy
+  if: steps.release.outputs.released == 'true' || steps.release.outputs.existing-tag != ''
+  env:
+    TAG: ${{ steps.release.outputs.tag || steps.release.outputs.existing-tag }}
+  run: ./deploy.sh "$TAG"
+```
 
 ### Branch patterns are fully anchored regex
 

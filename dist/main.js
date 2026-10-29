@@ -30366,6 +30366,10 @@ function findLatestTag(tags) {
 function findPreviousTag(tags, current) {
   return findLatestTag(tags.filter((t) => semver.valid(t.version) && semver.lt(t.version, current.version)));
 }
+function findTagOnCommit(tags, sha) {
+  const commit = sha.toLowerCase();
+  return findLatestTag(tags.filter((t) => t.sha.toLowerCase() === commit));
+}
 
 // src/release/title.ts
 function formatReleaseTitle(template, values) {
@@ -30569,6 +30573,12 @@ async function run() {
     info(`\u{1F4CC} Latest tag: ${latestTag.name} (${latestTag.version})`);
   } else {
     info("\u{1F4CC} No previous tags found \u2014 this will be the initial release.");
+  }
+  const existingTag = findTagOnCommit(tags, commitRef);
+  if (existingTag) {
+    info(`\u{1F4CC} Commit ${commitRef} is already released as ${existingTag.name}.`);
+    setOutput("existing-tag", existingTag.name);
+    setOutput("existing-version", existingTag.version);
   }
   info("\u{1F4DD} Analyzing commits...");
   const allCommits = await getCommitsBetween(latestTag?.sha ?? null, commitRef);
