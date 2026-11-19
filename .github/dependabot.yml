@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # @types/node tracks the action runtime (runs.using: node24), not the Node 26 tooling.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       vitest:
         patterns:

@@ -8,10 +8,10 @@ permissions:
   contents: read
 
 jobs:
-  # The action itself runs on node24 (the newest runtime GitHub runners ship);
-  # this job keeps the code ready for the switch to node26.
-  test-node26:
-    name: Test (Node 26)
+  # Tooling runs on Node 26, but the action itself runs on node24 (runs.using):
+  # GitHub runners ship no node26 action runtime yet. This job tests the runtime.
+  test-node24:
+    name: Test (Node 24)
     runs-on: ubuntu-latest
     steps:
       - name: 📥 Checkout
@@ -25,7 +25,7 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26'
+          node-version: '24'
           cache: 'pnpm'
 
       - name: 📦 Install dependencies
@@ -51,7 +51,7 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '24'
+          node-version: '26'
           cache: 'pnpm'
 
       - name: 📦 Install dependencies
